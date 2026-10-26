@@ -1,6 +1,7 @@
 import { extractWithLlm } from "./extract/llmExtractor.js";
 import { mapScope } from "./extract/scopeMapper.js";
 import type { Mapping } from "./extract/keywordScope.js";
+import type { ChangeSet } from "./git/types.js";
 import { readChangeSet } from "./git/diff.js";
 import { resolveRefs } from "./git/resolve.js";
 import { NocapEvents } from "./events.js";
@@ -20,8 +21,10 @@ import { NOCAP_VERSION } from "./version.js";
 /** Execution-backed stage (suite run, Bitecheck, build commands). Supplied by P5; absent under --no-exec. */
 export interface ExecStage {
   runSuite(ctx: { repoRoot: string; headSha: string }): Promise<TestRunResult | null>;
-  bitecheck(claim: Claim, ctx: { repoRoot: string; baseSha: string; headSha: string; changedFiles: string[] }): Promise<BitecheckResult | null>;
+  bitecheck(claim: Claim, ctx: { repoRoot: string; baseSha: string; headSha: string; changeSet: ChangeSet }): Promise<BitecheckResult | null>;
   runCommand(command: string, ctx: { repoRoot: string; headSha: string }): Promise<{ exitCode: number; durationMs: number; stderrTail: string; command: string } | null>;
+  /** Removes any worktree the stage created. Always called, even when verification throws. */
+  dispose?(): Promise<void>;
 }
 
 export interface VerifyInput {
@@ -43,6 +46,14 @@ export interface VerifyOutput {
 const SCOPE_TYPES = new Set(["scope_none", "scope_only"]);
 
 export async function verify(input: VerifyInput): Promise<VerifyOutput> {
+  try {
+    return await verifyInner(input);
+  } finally {
+    await input.execStage?.dispose?.();
+  }
+}
+
+async function verifyInner(input: VerifyInput): Promise<VerifyOutput> {
   const { config, deps, summary, runId } = input;
   const { git, clock } = deps;
   const events = input.events ?? new NocapEvents();
@@ -129,7 +140,7 @@ export async function verify(input: VerifyInput): Promise<VerifyOutput> {
   if (stage) {
     for (const claim of claims) {
       if (claim.type === "tests_added" || claim.type === "bug_fixed") {
-        const bc = await stage.bitecheck(claim, { ...ctxBase, changedFiles: changeSet.files.map((f) => f.path) });
+        const bc = await stage.bitecheck(claim, { ...ctxBase, changeSet });
         if (bc) bitechecks.set(claim.id, bc);
       } else if (claim.type === "build_pass" && claim.command) {
         const run = await stage.runCommand(claim.command, ctxBase);

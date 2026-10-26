@@ -49,3 +49,15 @@ describe("PR demo (no keys)", () => {
     expect(ev.at(-1)!.data.outcome).toBe("resolved");
   });
 });
+
+describe("OG images", () => {
+  it("receipt and chain cards return image/png", async () => {
+    const { default: receiptImage } = await import("../app/r/[id]/opengraph-image");
+    const { default: chainImage } = await import("../app/c/[chainId]/opengraph-image");
+    const first = await getStore().get("ex-toothless");
+    const a = await receiptImage({ params: Promise.resolve({ id: "ex-toothless" }) });
+    expect(a.headers.get("content-type")).toBe("image/png");
+    const b = await chainImage({ params: Promise.resolve({ chainId: first!.receipt.chain.chainId }) });
+    expect(b.headers.get("content-type")).toBe("image/png");
+  });
+});

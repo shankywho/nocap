@@ -1,0 +1,203 @@
+{
+  "schemaVersion": 1,
+  "id": "ID",
+  "runId": "RUN",
+  "createdAt": "T",
+  "input": {
+    "mode": "local",
+    "agent": "mock",
+    "summary": "Pure refactor of parser.ts, no behaviour change, no test changes.\n",
+    "repo": null,
+    "pr": null,
+    "base": "BASE",
+    "head": "HEAD",
+    "headIsSnapshot": false,
+    "alan": null
+  },
+  "chain": {
+    "chainId": "runfakeref",
+    "parentId": null,
+    "attempt": 1,
+    "items": [
+      {
+        "key": "c1",
+        "quote": "Pure refactor of parser.ts, no behaviour change, no test changes.",
+        "status": "open",
+        "sinceAttempt": 1,
+        "resolvedAttempt": null
+      },
+      {
+        "key": "c2",
+        "quote": "no test changes.",
+        "status": "open",
+        "sinceAttempt": 1,
+        "resolvedAttempt": null
+      }
+    ],
+    "outcome": "unresolved"
+  },
+  "actor": {
+    "agent": "mock",
+    "model": null,
+    "role": null
+  },
+  "claims": [
+    {
+      "claim": {
+        "id": "c1",
+        "quote": "Pure refactor of parser.ts, no behaviour change, no test changes.",
+        "type": "refactor_no_behavior_change",
+        "subject": null,
+        "keywords": [],
+        "paths": [
+          "parser.ts"
+        ],
+        "symbols": [],
+        "count": null,
+        "command": null,
+        "span": [
+          0,
+          65
+        ]
+      },
+      "verdict": {
+        "status": "contradicted",
+        "reason": "Test files changed in a \"no behaviour change\" refactor: test/parser.test.ts.",
+        "evidence": [
+          {
+            "kind": "file",
+            "path": "test/parser.test.ts",
+            "status": "M",
+            "additions": 1,
+            "deletions": 1,
+            "previousPath": null
+          }
+        ],
+        "flags": [],
+        "bitecheck": null,
+        "repair": "Tests changed or the suite fails, so this was not behaviour-neutral. Revert test edits or describe the behaviour change in your summary."
+      }
+    },
+    {
+      "claim": {
+        "id": "c2",
+        "quote": "no test changes.",
+        "type": "scope_none",
+        "subject": "test",
+        "keywords": [
+          "test",
+          "tests",
+          "spec",
+          "suite"
+        ],
+        "paths": [],
+        "symbols": [],
+        "count": null,
+        "command": null,
+        "span": [
+          49,
+          65
+        ]
+      },
+      "verdict": {
+        "status": "contradicted",
+        "reason": "test/parser.test.ts changed although the summary says 'test' was untouched.",
+        "evidence": [
+          {
+            "kind": "mapping",
+            "concept": "test",
+            "globs": [
+              "**/*.{test,spec}.{ts,tsx,js,jsx,mjs,cjs}",
+              "**/test/**"
+            ],
+            "matchedFiles": 4,
+            "source": "keyword"
+          },
+          {
+            "kind": "file",
+            "path": "test/parser.test.ts",
+            "status": "M",
+            "additions": 1,
+            "deletions": 1,
+            "previousPath": null
+          },
+          {
+            "kind": "hunk",
+            "path": "test/parser.test.ts",
+            "startLine": 6,
+            "lines": [
+              "-    expect(parsePrice(\"₹1,299.50\")).toEqual(1299.5);",
+              "+    expect(parsePrice(\"₹1,299.50\")).toBeCloseTo(1299.5, 0);"
+            ]
+          }
+        ],
+        "flags": [],
+        "bitecheck": null,
+        "repair": "You said you didn't touch test, but `test/parser.test.ts` changed (+1 −1). Revert that change or explain it in your summary."
+      }
+    }
+  ],
+  "undisclosed": [],
+  "globalFlags": [],
+  "totals": {
+    "verified": 0,
+    "contradicted": 2,
+    "unverifiable": 0,
+    "flags": 0
+  },
+  "overall": "FAIL",
+  "model": {
+    "provider": "offline",
+    "id": "offline",
+    "degraded": false
+  },
+  "trace": [
+    {
+      "step": "resolve",
+      "ms": 0,
+      "status": "ok",
+      "detail": "3be732b..5f17dab"
+    },
+    {
+      "step": "diff",
+      "ms": 0,
+      "status": "ok",
+      "detail": "2 files"
+    },
+    {
+      "step": "extract",
+      "ms": 0,
+      "status": "ok",
+      "detail": "2 claims"
+    },
+    {
+      "step": "scope",
+      "ms": 0,
+      "status": "ok",
+      "detail": "1 concepts"
+    },
+    {
+      "step": "suite",
+      "ms": 0,
+      "status": "skipped",
+      "detail": "execution disabled"
+    },
+    {
+      "step": "verify",
+      "ms": 0,
+      "status": "ok",
+      "detail": "2 verdicts"
+    },
+    {
+      "step": "tamper",
+      "ms": 0,
+      "status": "ok",
+      "detail": "0 flags"
+    }
+  ],
+  "durationMs": 0,
+  "tool": {
+    "name": "nocap",
+    "version": "0.1.0"
+  }
+}

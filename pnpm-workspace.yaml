@@ -7,3 +7,4 @@ allowBuilds:
   sharp: true
   "@prisma/client": true
   prisma: true
+  msw: true

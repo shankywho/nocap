@@ -19,8 +19,7 @@ export function verifyScope(claim: Claim, ctx: VerifyContext): Verdict {
   if (!mapping || mapping.globs.length === 0 || mapping.matchedFiles.length === 0) {
     return unverifiable(`Could not map '${concept || "the scope"}' to any file, so the claim cannot be checked.`);
   }
-  const source = mapping.globs.length > 0 && claim.paths.length > 0 ? "user" : "keyword";
-  const mapEv = mappingEvidence(mapping, source);
+  const mapEv = mappingEvidence(mapping, mapping.source ?? "keyword");
   const match = picomatch(mapping.globs, { dot: true });
   const inScope = (path: string) => match(path) || mapping.matchedFiles.includes(path);
   const changed = ctx.changeSet.files;

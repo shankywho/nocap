@@ -152,7 +152,8 @@ export async function buildFixtures(opts: BuildFixtureOptions = {}): Promise<Bui
     );
 
     built.push({ name, repoPath: dest, baseSha, headSha, mode: mode as "commit" | "worktree" });
-    if (!opts.quiet) console.log(`  ${name.padEnd(16)} ${baseSha.slice(0, 7)} → ${headSha.slice(0, 7)} (${mode})`);
+    if (!opts.quiet)
+      console.log(`  ${name.padEnd(16)} ${baseSha.slice(0, 7)} → ${headSha.slice(0, 7)} (${mode})`);
   }
 
   return built;

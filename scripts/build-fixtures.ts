@@ -5,6 +5,7 @@
  * Deterministic author and dates keep commit SHAs stable so golden receipts
  * can be compared across machines.
  */
+import { existsSync } from "node:fs";
 import { cp, mkdir, readFile, readdir, rm, symlink, writeFile } from "node:fs/promises";
 import { dirname, join, relative } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
@@ -111,7 +112,10 @@ export async function buildFixtures(opts: BuildFixtureOptions = {}): Promise<Bui
       return rel === "node_modules" || rel.startsWith(`node_modules${"/"}`) || rel === ".git";
     });
 
-    await symlink(join(root, "node_modules"), join(dest, "node_modules"), "junction");
+    // npm strips .gitignore from tarballs, so make sure a packaged demo never snapshots its node_modules.
+    if (!existsSync(join(dest, ".gitignore"))) await writeFile(join(dest, ".gitignore"), "node_modules/\n");
+    // In a source checkout the fixtures share the repo's node_modules; a packaged demo installs its own.
+    if (existsSync(join(root, "node_modules"))) await symlink(join(root, "node_modules"), join(dest, "node_modules"), "junction");
 
     await git(dest, ["init", "-q", "-b", "main"]);
     await git(dest, ["config", "core.autocrlf", "false"]);
@@ -179,7 +183,11 @@ if (isDirectRun) {
   const only = process.argv.slice(2).filter((arg) => !arg.startsWith("-"));
   const list = only.length > 0 ? only : undefined;
   console.log(`building fixtures${list ? `: ${list.join(", ")}` : ""}`);
-  buildFixtures({ scenarios: list })
+  buildFixtures({
+    scenarios: list,
+    ...(process.env.NOCAP_FIXTURES_ROOT ? { root: process.env.NOCAP_FIXTURES_ROOT } : {}),
+    ...(process.env.NOCAP_FIXTURES_CACHE ? { cacheDir: process.env.NOCAP_FIXTURES_CACHE } : {}),
+  })
     .then((built) => console.log(`built ${built.length} scenario(s) in .cache/fixtures`))
     .catch((error: unknown) => {
       console.error(error instanceof Error ? error.message : error);

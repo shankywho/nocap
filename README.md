@@ -22,7 +22,7 @@ cd your-repo && pbpaste | npx nocap check   # verify your agent's last summary
 npx nocap init --all --write                # wire MCP + hooks into every agent you have
 ```
 
-`init` is a dry run unless you pass `--write`. `check` exits 0 on pass, 1 on a contradiction, 2 on bad input, 3 on MIXED with `--strict`.
+`npx nocap demo` builds a small fixture repo in your temp directory and installs `vitest` into it (needs network once); without network it falls back to static checks. `init` is a dry run unless you pass `--write`. `check` exits 0 on pass, 1 on a contradiction, 2 on bad input, 3 on MIXED with `--strict`.
 
 ## What it checks
 

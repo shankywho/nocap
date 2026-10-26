@@ -13,6 +13,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "fixtures": "tsx scripts/build-fixtures.ts",
+    "pack:cli": "node scripts/pack-cli.mjs",
     "build-log": "sh scripts/build-log.sh",
     "docs:cli": "tsx --tsconfig tsconfig.tools.json scripts/gen-cli-docs.ts",
     "examples:generate": "tsx --tsconfig tsconfig.tools.json scripts/generate-examples.ts",

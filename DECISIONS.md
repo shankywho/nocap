@@ -156,3 +156,10 @@ Anything that could not be confirmed against the source is marked **UNVERIFIED**
 - Context: `verify()` needs a git checkout; the web has only GitHub patches.
 - Decision: `static/prVerify.ts` builds the ChangeSet from PR file patches (`changeSetFromPatches`), reuses the same extractor, scope mapper, verifiers and policy, and takes `tests_pass` from CI check runs. tests_added, bug_fixed and build_pass stay `!`. `readFileAtHead` returns null, so `symbol_added` is `!` in PR mode.
 - Verified: `apps/web/test/demo.test.ts` (CI ✓, auth ✗, tests_added !).
+
+## 2026-10-26 · P10 · CLI tarball is a bundle built by `pnpm pack:cli`
+
+- Context: `apps/cli` depends on `workspace:*` packages that are not published, and the offline store cannot regenerate the lockfile, so moving them to devDependencies was not an option.
+- Decision: `scripts/pack-cli.mjs` bundles the CLI and `scripts/build-fixtures.ts` with esbuild into `.cache/pack-cli`, copies `fixtures/`, writes a dependency-free staging `package.json` and runs `npm pack`. The workspace manifest is untouched. `demo` detects the packaged layout, builds the scenario in `$TMPDIR/nocap-demo`, installs `vitest` there (network) and falls back to `--no-exec` if that fails. npm strips `.gitignore` from tarballs, so build-fixtures writes `node_modules/` into each scenario repo.
+- Alternatives: publishing `@nocap/core` and `@nocap/mcp` separately.
+- Verified: installed the tarball into an empty project and ran `npx nocap demo toothless` (toothless caught, exit 1 FAIL).

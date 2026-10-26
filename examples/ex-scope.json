@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "id": "ex-scope",
   "runId": "scope_violation-full",
-  "createdAt": "2026-10-26T14:57:16.832Z",
+  "createdAt": "2026-10-26T15:02:57.203Z",
   "input": {
     "mode": "local",
     "agent": "eval-agent",
@@ -114,7 +114,7 @@
             "passed": 2,
             "failed": 0,
             "skipped": 0,
-            "durationMs": 689,
+            "durationMs": 694,
             "tests": [
               {
                 "file": "test/retry.test.ts",
@@ -136,7 +136,7 @@
             "passed": 0,
             "failed": 2,
             "skipped": 0,
-            "durationMs": 680,
+            "durationMs": 694,
             "tests": [
               {
                 "file": "test/retry.test.ts",
@@ -177,7 +177,7 @@
             "passed": 2,
             "failed": 0,
             "skipped": 0,
-            "durationMs": 689,
+            "durationMs": 694,
             "tests": [
               {
                 "file": "test/retry.test.ts",
@@ -199,7 +199,7 @@
             "passed": 0,
             "failed": 2,
             "skipped": 0,
-            "durationMs": 680,
+            "durationMs": 694,
             "tests": [
               {
                 "file": "test/retry.test.ts",
@@ -308,7 +308,7 @@
             "passed": 13,
             "failed": 0,
             "skipped": 0,
-            "durationMs": 717,
+            "durationMs": 699,
             "tests": [
               {
                 "file": "test/legacy.test.ts",
@@ -401,7 +401,7 @@
   "trace": [
     {
       "step": "resolve",
-      "ms": 226,
+      "ms": 218,
       "status": "ok",
       "detail": "3be732b..f13e0c6"
     },
@@ -413,7 +413,7 @@
     },
     {
       "step": "extract",
-      "ms": 1,
+      "ms": 0,
       "status": "ok",
       "detail": "4 claims"
     },
@@ -425,24 +425,24 @@
     },
     {
       "step": "suite",
-      "ms": 753,
+      "ms": 733,
       "status": "ok",
       "detail": "13/13"
     },
     {
       "step": "verify",
-      "ms": 0,
+      "ms": 1,
       "status": "ok",
       "detail": "4 verdicts"
     },
     {
       "step": "tamper",
-      "ms": 35,
+      "ms": 36,
       "status": "ok",
       "detail": "0 flags"
     }
   ],
-  "durationMs": 2743,
+  "durationMs": 2731,
   "tool": {
     "name": "nocap",
     "version": "0.1.0"

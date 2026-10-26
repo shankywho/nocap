@@ -9,9 +9,10 @@
 - `render/`: terminal (NO_COLOR default), markdown, json. Exported from `src/index.ts`.
 - Tests: `test/staticVerifiers.test.ts`, `test/tamperPolicyRender.test.ts`.
 
-## Open for P4 "done when"
-- `--no-exec` goldens for all 8 scenarios need `pipeline.ts` (not written yet): extract -> map scope -> verifyClaim -> tamper -> undisclosed -> overall -> Receipt. Golden compare normalises ids/timestamps/ms.
-- No `test/__golden__/` yet.
+## P4 pipeline
+- `src/pipeline.ts` `verify()` static pipeline; optional `ExecStage` (runSuite/bitecheck/runCommand) is the P5 plug-in point.
+- `test/pipeline.noexec.test.ts` + `test/__golden__/<scenario>.noexec.json` (UPDATE_GOLDEN=1 to regenerate). All 8 pass.
+- Chain fields are first-attempt stubs (real chain store is P8b).
 
 ## Notes
 - Exec-backed verifiers read `ctx.suite/bitechecks/commands`; with `execEnabled=false` they return unverifiable (never verified).
@@ -19,4 +20,4 @@
 - Repair text is set on verdict.repair by pipeline via `repairText`.
 
 ## Next
-Commit P4, then write pipeline (static) + goldens, then P5 (runners, Bitecheck).
+P5: runners (detect/vitest/jest/pytest/parse), suite run, build_pass, bitecheck select/run, implement ExecStage.

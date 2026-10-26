@@ -21,7 +21,7 @@ export default function Docs() {
       <Pre>{"npx nocap demo toothless\nnpx nocap check --summary summary.md"}</Pre>
 
       <H id="cli">CLI reference</H>
-      <P>Generated from the commander help text. Exit codes: 0 pass, 1 contradicted, 2 usage or input error, 3 tamper with --strict.</P>
+      <P>Generated from the commander help text. Exit codes: 0 pass, 1 contradicted, 2 usage or input error, 3 MIXED with --strict.</P>
       <Pre>{help.root}</Pre>
       {Object.entries(cmds).map(([name, text]) => (
         <div key={name} className="space-y-1"><h3 className="font-mono text-sm text-accent">nocap {name}</h3><Pre>{text}</Pre></div>

@@ -23,6 +23,7 @@ export default defineConfig({
       "packages/*/test/**/*.test.ts",
       "apps/cli/test/**/*.test.ts",
       "apps/web/test/**/*.test.ts",
+      "action/test/**/*.test.ts",
     ],
     exclude: ["**/node_modules/**", "**/.cache/**", "**/e2e/**"],
     testTimeout: 30_000,

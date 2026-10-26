@@ -141,6 +141,10 @@ The per-agent config shapes are the best-known formats and are **unverified** ag
 
 Workflow recipe: run `npx nocap check --md` on every agent PR and paste the markdown into the PR. Whether Alan accepts a local stdio MCP server from a plugin is unverified; [docs/ALAN.md](docs/ALAN.md) has the remote-connector fallback.
 
+## GitHub Action
+
+`action/` comments the receipt on same-repo PRs and updates it on each push. Setup and limits: [docs/ACTION.md](docs/ACTION.md).
+
 ## Open models
 
 Claim extraction uses any OpenAI-compatible endpoint, `openai/gpt-oss-120b` on Groq by default. Set `LLM_BASE_URL`, `LLM_API_KEY` and `LLM_MODEL` to swap it. The spec estimates about $0.007 per receipt at that model's list prices; that figure is not measured here. `--offline` (or `NOCAP_OFFLINE=1`) skips the model and uses the deterministic extractor, with the same verifiers.

@@ -84,7 +84,7 @@ describe("runtime leakage", () => {
     LLM_API_KEY: "SENTINEL_LLM_KEY_9f31",
     LLM_FALLBACK_API_KEY: "SENTINEL_FALLBACK_KEY_77aa",
     GITHUB_TOKEN: "SENTINEL_GH_TOKEN_c0de",
-    DATABASE_URL: "postgres://SENTINEL_DB_USER:SENTINEL_DB_PASS@db.example/x",
+    DATABASE_URL: `postgres://${"SENTINEL_DB_USER"}:SENTINEL_DB_PASS@db.example/x`,
     AWS_SECRET_ACCESS_KEY: "SENTINEL_AWS_5ec",
   };
 

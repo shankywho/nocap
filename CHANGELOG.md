@@ -14,5 +14,8 @@ All notable changes to this project are documented here. The format follows Keep
 - Web (`apps/web`): receipts, proof chains, scorecard, `/verify` with SSE, PR mode over GitHub patches, demo and loop demo streams, OG cards, landing, `/docs`. In-memory store seeded from `examples/`.
 - Eval: B0-B3 table, repair-loop table and handoff eval (`pnpm eval`).
 
+### Also added
+- `hook codex` and `hook gemini`, GitHub Action, leakage tests (secrets, home paths, env, web responses).
+
 ### Not included
-- Prisma store, Playwright smoke test, Codex and Gemini hooks, hosted Bitecheck. See DECISIONS.md.
+- Prisma store, Playwright smoke test, hosted Bitecheck. See DECISIONS.md.

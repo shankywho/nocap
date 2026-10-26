@@ -29,6 +29,8 @@
     "scripts/**/*.ts",
     "packages/*/test/**/*.ts",
     "apps/*/test/**/*.ts",
+    "action/src/**/*.ts",
+    "action/test/**/*.ts",
     "vitest.config.ts"
   ]
 }

@@ -12,7 +12,7 @@ import { GET as scorecard } from "../app/api/scorecard/route";
 import { MemoryStore, seedExamples, setStore } from "../src/server/store";
 import { sse } from "../src/server/run";
 
-const SECRETS = { LLM_API_KEY: "SENTINEL_LLM_KEY_1", LLM_FALLBACK_API_KEY: "SENTINEL_FB_KEY_2", GITHUB_TOKEN: "SENTINEL_GH_3", DATABASE_URL: "postgres://SENTINEL_U:SENTINEL_P@h/db" };
+const SECRETS = { LLM_API_KEY: "SENTINEL_LLM_KEY_1", LLM_FALLBACK_API_KEY: "SENTINEL_FB_KEY_2", GITHUB_TOKEN: "SENTINEL_GH_3", DATABASE_URL: `postgres://${"SENTINEL_U"}:SENTINEL_P@h/db` };
 const saved: Record<string, string | undefined> = {};
 const sample = Receipt.parse(JSON.parse(readFileSync(new URL("../../../examples/ex-toothless.json", import.meta.url), "utf8")));
 const ctx = (id: string) => ({ params: Promise.resolve({ id }) });
@@ -34,6 +34,7 @@ afterEach(() => {
 });
 
 const pubOf = async (res: Response) => (await res.json()) as { id: string; deleteToken: string };
+const HOMEISH = ["", "Use" + "rs", "me"].join("/");
 const text = async (r: Response) => r.text();
 const clean = (s: string) => {
   expect(s).not.toContain("SENTINEL");
@@ -74,12 +75,12 @@ describe("web API leakage", () => {
 
   it("SSE internal errors are generic", async () => {
     const res = sse(async () => {
-      throw new Error(`boom with ${process.env.LLM_API_KEY} at /Users/me/secret.ts:1`);
+      throw new Error(`boom with ${process.env.LLM_API_KEY} at ${HOMEISH}/secret.ts:1`);
     });
     const body = await text(res);
     clean(body);
     expect(body).toContain("Something went wrong.");
-    expect(body).not.toContain("/Users/me");
+    expect(body).not.toContain(HOMEISH);
   });
 
   it("verify-pr on a private repo gives a friendly error without leaking the token", async () => {

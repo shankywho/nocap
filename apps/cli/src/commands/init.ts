@@ -1,7 +1,7 @@
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
 
-export const CLAUDE_HOOK = { type: "command", command: "npx -y nocap hook claude" } as const;
+export const CLAUDE_HOOK = { type: "command", command: "npx -y @shankywho/nocap hook claude" } as const;
 
 type Json = Record<string, unknown>;
 

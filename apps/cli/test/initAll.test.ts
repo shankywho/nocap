@@ -44,13 +44,13 @@ describe("init --all (fake HOME, stubbed PATH)", () => {
 
   it("--write configures everything, preserves unrelated entries and backs up", async () => {
     await run(true);
-    expect(JSON.parse(await read(".mcp.json")).mcpServers.nocap.args).toEqual(["-y", "nocap", "mcp"]);
+    expect(JSON.parse(await read(".mcp.json")).mcpServers.nocap.args).toEqual(["-y", "@shankywho/nocap", "mcp"]);
     expect(JSON.parse(await read(".claude/settings.json")).hooks.Stop[0].hooks[0].command).toContain("nocap hook claude");
     const cursor = JSON.parse(await read(".cursor/mcp.json"));
     expect(cursor.mcpServers.unrelated).toEqual({ command: "x" });
     expect(cursor.mcpServers.nocap).toBeDefined();
     expect(existsSync(join(repo, ".cursor", "mcp.json.bak"))).toBe(true);
-    expect(JSON.parse(await read("opencode.json")).mcp.nocap).toEqual({ type: "local", command: ["npx", "-y", "nocap", "mcp"], enabled: true });
+    expect(JSON.parse(await read("opencode.json")).mcp.nocap).toEqual({ type: "local", command: ["npx", "-y", "@shankywho/nocap", "mcp"], enabled: true });
     expect(JSON.parse(await read(".gemini/settings.json")).mcpServers.nocap).toBeDefined();
     for (const f of ["AGENTS.md", "CLAUDE.md"]) expect(await read(f)).toContain("<!-- nocap:start -->");
     expect(await read("CLAUDE.md")).toContain("# Project");

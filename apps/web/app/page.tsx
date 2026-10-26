@@ -48,7 +48,7 @@ export default async function Home() {
             <div className="flex flex-wrap items-center gap-3">
               <a href="#demo" className="rounded-md bg-accent px-4 py-2 font-mono text-sm font-semibold text-black">Try the demo</a>
               <a href="https://github.com/shankar7055/NoCap" className="rounded-md px-4 py-2 font-mono text-sm ring-1 ring-hairline">Star on GitHub</a>
-              <CopyPill text="npx nocap demo" />
+              <CopyPill text="npx @shankywho/nocap demo" />
             </div>
           </div>
           <TerminalReceipt />
@@ -101,7 +101,7 @@ export default async function Home() {
       <Section>
         <H2>Built for Alan&apos;s verify loop</H2>
         <p className="max-w-2xl text-muted">The plugin calls <code>verify_claims</code> before an agent declares done and attaches the result as the task&apos;s test report: pass, fail or mixed.</p>
-        <pre className="overflow-x-auto rounded-lg bg-surface p-4 text-sm ring-1 ring-hairline">npx nocap init --all</pre>
+        <pre className="overflow-x-auto rounded-lg bg-surface p-4 text-sm ring-1 ring-hairline">npx @shankywho/nocap init --all</pre>
       </Section>
 
       <Section>
@@ -113,7 +113,7 @@ export default async function Home() {
         </div>
       </Section>
 
-      <Section><H2>Every agent</H2><CopyPill text="npx nocap init --all" /><AgentTabs /><a href="/agents" className="font-mono text-sm text-accent">See the scorecard →</a></Section>
+      <Section><H2>Every agent</H2><CopyPill text="npx @shankywho/nocap init --all" /><AgentTabs /><a href="/agents" className="font-mono text-sm text-accent">See the scorecard →</a></Section>
 
       <Section>
         <H2>Eval</H2>

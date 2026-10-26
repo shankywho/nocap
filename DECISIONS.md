@@ -188,3 +188,9 @@ Anything that could not be confirmed against the source is marked **UNVERIFIED**
 - Context: the workspace cannot `pnpm add` (store mismatch), and no Postgres is available here.
 - Decision: `apps/web/prisma/schema.prisma` is the spec's schema. `PrismaStore` depends only on a `PrismaLike` interface (the five client calls it makes), and `getStore()` returns a lazy store that dynamic-imports `@prisma/client` only when `DATABASE_URL` is set and `MOCK_EXTERNALS=false`, seeds the examples, and falls back to memory (health `db: "down"`) if the import or connection fails. To enable it: `pnpm add @prisma/client && pnpm add -D prisma`, `npx prisma migrate deploy`, set `DATABASE_URL`/`DIRECT_URL`.
 - Verified: `apps/web/test/prismaStore.test.ts` against an in-memory fake with the same call shapes (round trip, upsert, ordering, delete, schema re-validation on read). **Not verified against a real database.** GithubCache and RateLimit tables exist in the schema but are not used (the limiter is in-memory).
+
+## 2026-10-26 · P10 · npm package is `@shankywho/nocap`
+
+- Context: npm rejected `nocap` ("too similar to existing package no-cap") on publish.
+- Decision: publish as `@shankywho/nocap` (the name npm suggested for this account). The installed command is still `nocap` (`bin`). Every generated config, doc and test now uses `npx -y @shankywho/nocap ...`. `scripts/pack-cli.mjs` sets the staging manifest name; the workspace package stays `nocap` internally.
+- Alternatives: another unscoped name; a scope is simpler and always available.

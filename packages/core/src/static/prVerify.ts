@@ -110,7 +110,7 @@ export async function prVerify(input: PrVerifyInput): Promise<Receipt> {
     for (const claim of claims) {
       const v = claim.type === "tests_pass" ? ciVerdict(checks.runs, status.statuses, meta.headSha) : await verifyClaim(claim, ctx);
       if (v.status === "unverifiable" && ["tests_added", "bug_fixed", "build_pass"].includes(claim.type)) {
-        v.reason = "Proving this needs execution: run `npx nocap check` locally.";
+        v.reason = "Proving this needs execution: run `npx @shankywho/nocap check` locally.";
       }
       verdicts.push(v);
       events.emit({ type: "claim.verdict", runId, claimId: claim.id, status: v.status, reason: v.reason });

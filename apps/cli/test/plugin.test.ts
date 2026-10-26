@@ -8,7 +8,7 @@ describe("Alan plugin", () => {
     const manifest = JSON.parse(read(".cursor-plugin/plugin.json"));
     expect(manifest.name).toBe("nocap");
     expect(manifest.mcpServers).toBe("./mcp.json");
-    expect(JSON.parse(read("mcp.json")).mcpServers.nocap.args).toEqual(["-y", "nocap", "mcp"]);
+    expect(JSON.parse(read("mcp.json")).mcpServers.nocap.args).toEqual(["-y", "@shankywho/nocap", "mcp"]);
     expect(read("logo.svg")).toContain("<svg");
   });
   it("skill has frontmatter and names the protocol tools", () => {

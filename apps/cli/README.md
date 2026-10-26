@@ -3,9 +3,9 @@
 Your agent says it's done. nocap checks.
 
 ```bash
-npx nocap demo
-cd your-repo && pbpaste | npx nocap check
-npx nocap init --all --write
+npx @shankywho/nocap demo
+cd your-repo && pbpaste | npx @shankywho/nocap check
+npx @shankywho/nocap init --all --write
 ```
 
 Docs and source: https://github.com/shankar7055/NoCap

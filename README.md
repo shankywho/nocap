@@ -12,17 +12,17 @@ nocap turns a coding agent's completion message into executed proof. It splits t
 ## Try it
 
 - Live demo: **TODO(human): deployed URL** (no signup; an example receipt shows a ✗ within one click)
-- Locally: `npx nocap demo`
+- Locally: `npx @shankywho/nocap demo`
 
 ## Quickstart
 
 ```bash
-npx nocap demo                              # see it catch toothless tests on a fixture
-cd your-repo && pbpaste | npx nocap check   # verify your agent's last summary
-npx nocap init --all --write                # wire MCP + hooks into every agent you have
+npx @shankywho/nocap demo                              # see it catch toothless tests on a fixture
+cd your-repo && pbpaste | npx @shankywho/nocap check   # verify your agent's last summary
+npx @shankywho/nocap init --all --write                # wire MCP + hooks into every agent you have
 ```
 
-`npx nocap demo` builds a small fixture repo in your temp directory and installs `vitest` into it (needs network once); without network it falls back to static checks. `init` is a dry run unless you pass `--write`. `check` exits 0 on pass, 1 on a contradiction, 2 on bad input, 3 on MIXED with `--strict`.
+`npx @shankywho/nocap demo` builds a small fixture repo in your temp directory and installs `vitest` into it (needs network once); without network it falls back to static checks. `init` is a dry run unless you pass `--write`. `check` exits 0 on pass, 1 on a contradiction, 2 on bad input, 3 on MIXED with `--strict`.
 
 ## What it checks
 
@@ -112,7 +112,7 @@ Scenario 10: the backend agent claims `computeDelay()` but exports `getDelay()`.
 
 ## Works with every agent
 
-`npx nocap init --all` detects agents and writes their config. Dry run by default.
+`npx @shankywho/nocap init --all` detects agents and writes their config. Dry run by default.
 
 | Agent | What `init --all --write` writes |
 |---|---|
@@ -128,7 +128,7 @@ The per-agent config shapes are the best-known formats and are **unverified** ag
 
 ## Using with Alan
 
-1. Add `plugins/nocap` to your Alan workspace. It starts the MCP server with `npx -y nocap mcp`.
+1. Add `plugins/nocap` to your Alan workspace. It starts the MCP server with `npx -y @shankywho/nocap mcp`.
 2. The agent picks up the `nocap-verify` skill (`plugins/nocap/skills/nocap-verify/SKILL.md`): `ledger_facts` at the start of a multi-agent task, `bitecheck` after writing tests, `verify_claims` before saying done, `get_repair` after a fail.
 3. Results map to Alan's test report:
 
@@ -139,7 +139,7 @@ The per-agent config shapes are the best-known formats and are **unverified** ag
 | each claim | a step |
 | each contradicted claim | a high-severity issue |
 
-Workflow recipe: run `npx nocap check --md` on every agent PR and paste the markdown into the PR. Whether Alan accepts a local stdio MCP server from a plugin is unverified; [docs/ALAN.md](docs/ALAN.md) has the remote-connector fallback.
+Workflow recipe: run `npx @shankywho/nocap check --md` on every agent PR and paste the markdown into the PR. Whether Alan accepts a local stdio MCP server from a plugin is unverified; [docs/ALAN.md](docs/ALAN.md) has the remote-connector fallback.
 
 ## GitHub Action
 

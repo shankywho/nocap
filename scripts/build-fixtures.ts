@@ -25,6 +25,8 @@ export type ScenarioName = (typeof SCENARIOS)[number];
 
 export interface BuildFixtureOptions {
   root?: string;
+  /** Override the output directory (defaults to <root>/.cache/fixtures). */
+  cacheDir?: string;
   scenarios?: readonly string[];
   quiet?: boolean;
 }
@@ -92,7 +94,7 @@ export async function buildFixtures(opts: BuildFixtureOptions = {}): Promise<Bui
   const root = opts.root ?? fileURLToPath(new URL("..", import.meta.url));
   const names = opts.scenarios ?? SCENARIOS;
   const base = join(root, "fixtures", "project");
-  const cache = join(root, ".cache", "fixtures");
+  const cache = opts.cacheDir ?? join(root, ".cache", "fixtures");
   const built: BuiltScenario[] = [];
 
   await mkdir(cache, { recursive: true });

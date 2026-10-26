@@ -155,7 +155,7 @@
       "step": "resolve",
       "ms": 0,
       "status": "ok",
-      "detail": "3be732b..4fe3f89"
+      "detail": "BASE..HEAD"
     },
     {
       "step": "diff",

@@ -13,6 +13,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "fixtures": "tsx scripts/build-fixtures.ts",
+    "examples:generate": "tsx --tsconfig tsconfig.tools.json scripts/generate-examples.ts",
     "eval": "tsx --tsconfig tsconfig.tools.json scripts/eval.ts",
     "demo": "tsx --tsconfig tsconfig.tools.json scripts/demo.ts",
     "format": "prettier --write .",

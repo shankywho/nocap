@@ -4,3 +4,4 @@ export * from "./fs.node.js";
 export * from "./git.simple.js";
 export * from "./llm.mock.js";
 export * from "./llm.openaiCompat.js";
+export * from "./local.js";

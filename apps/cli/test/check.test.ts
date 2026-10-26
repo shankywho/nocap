@@ -7,8 +7,8 @@ import { buildFixtures } from "../../../scripts/build-fixtures";
 import { runCheck } from "../src/commands/check";
 import { runRepair } from "../src/commands/repair";
 import { preparePublishBody, publishReceipt } from "../src/io/publish";
-import { parseScopeFlags } from "../src/io/config";
-import { latestReceiptFile, loadReceipt } from "../src/io/store";
+import { parseScopeFlags } from "@nocap/core/adapters";
+import { latestReceiptFile, loadReceipt } from "@nocap/core/adapters";
 
 const root = fileURLToPath(new URL("../../..", import.meta.url));
 let cacheDir = "";

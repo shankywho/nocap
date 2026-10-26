@@ -43,7 +43,7 @@ cpSync(join(root, "fixtures/scenarios"), join(stage, "fixtures/scenarios"), { re
 const src = JSON.parse(readFileSync(join(root, "apps/cli/package.json"), "utf8"));
 writeFileSync(
   join(stage, "package.json"),
-  `${JSON.stringify({ name: src.name, version: src.version, description: src.description, license: src.license, type: "module", bin: { nocap: "./bundle/nocap.js" }, files: ["bundle", "fixtures", "README.md"], engines: src.engines }, null, 2)}\n`,
+  `${JSON.stringify({ name: src.name, version: src.version, description: src.description, license: src.license, type: "module", bin: { nocap: "bundle/nocap.js" }, repository: { type: "git", url: "git+https://github.com/shankar7055/NoCap.git" }, homepage: "https://github.com/shankar7055/NoCap#readme", keywords: ["ai", "agents", "coding-agent", "verification", "claude-code", "mcp", "testing"], files: ["bundle", "fixtures", "README.md"], engines: src.engines }, null, 2)}\n`,
 );
 cpSync(join(root, "apps/cli/README.md"), join(stage, "README.md"));
 const out = execFileSync("npm", ["pack", "--silent"], { cwd: stage, encoding: "utf8" }).trim();

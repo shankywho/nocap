@@ -20,14 +20,14 @@
     "attempt": 1,
     "items": [
       {
-        "key": "c1",
+        "key": "pure refactor of parser.ts, no behaviour change, no test changes",
         "quote": "Pure refactor of parser.ts, no behaviour change, no test changes.",
         "status": "open",
         "sinceAttempt": 1,
         "resolvedAttempt": null
       },
       {
-        "key": "c2",
+        "key": "no test changes",
         "quote": "no test changes.",
         "status": "open",
         "sinceAttempt": 1,

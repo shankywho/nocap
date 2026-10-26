@@ -1,7 +1,6 @@
 import { randomBytes } from "node:crypto";
 import { writeFile } from "node:fs/promises";
 import {
-  buildRepairPacket,
   createExecStage,
   NocapEvents,
   renderJson,
@@ -9,7 +8,9 @@ import {
   renderTerminal,
   repairMarkdown,
   verify,
+  FsChainStore,
   type LlmPort,
+  type RepairPacket,
   type Receipt,
   type VerifyConfig,
 } from "@nocap/core";
@@ -41,6 +42,7 @@ export interface CheckOptions {
   model?: string;
   role?: string;
   verbose?: boolean;
+  chain?: string;
   cwd?: string;
   /** Test seam: inject summary text instead of reading stdin/file. */
   summaryText?: string;
@@ -50,6 +52,7 @@ export interface CheckOptions {
 export interface CheckResult {
   exitCode: number;
   receipt: Receipt | null;
+  repair: RepairPacket | null;
 }
 
 function makeLlm(env: NodeJS.ProcessEnv, offline: boolean): LlmPort {
@@ -125,6 +128,7 @@ export async function runCheck(opts: CheckOptions, env: NodeJS.ProcessEnv = proc
         ...(opts.head ? { head: opts.head } : {}),
         deps: { git, exec, fs, llm: opts.llm ?? makeLlm(env, offline), clock: new SystemClock(), logger: new ConsoleLogger("warn") },
         ...(stage ? { execStage: stage } : {}),
+        ...(opts.chain ? { chain: { id: opts.chain, store: new FsChainStore(fs, `${repoPath}/.nocap/chains`) } } : {}),
       });
     } finally {
       printer.stop();
@@ -140,7 +144,7 @@ export async function runCheck(opts: CheckOptions, env: NodeJS.ProcessEnv = proc
     if (savedTo && !opts.json) process.stderr.write(`saved ${savedTo}\n`);
 
     if (opts.repair && repair && !opts.json) {
-      process.stdout.write(`\n${repairMarkdown(buildRepairPacket(repair.chainId, repair.attempt, repair.overall, receipt.claims))}\n`);
+      process.stdout.write(`\n${repairMarkdown(repair)}\n`);
     }
     if (opts.publish) {
       const apiUrl = env.NOCAP_API_URL ?? "https://nocap.vercel.app";
@@ -153,10 +157,10 @@ export async function runCheck(opts: CheckOptions, env: NodeJS.ProcessEnv = proc
     }
 
     const exitCode = receipt.overall === "FAIL" ? 1 : receipt.overall === "MIXED" && opts.strict ? 3 : 0;
-    return { exitCode, receipt };
+    return { exitCode, receipt, repair };
   } catch (error) {
     err(error instanceof Error ? error.message : String(error));
     if (error instanceof UsageError) err("run `nocap check --help` for usage.");
-    return { exitCode: 2, receipt: null };
+    return { exitCode: 2, receipt: null, repair: null };
   }
 }

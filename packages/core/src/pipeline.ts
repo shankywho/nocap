@@ -5,6 +5,9 @@ import type { ChangeSet } from "./git/types.js";
 import { readChangeSet } from "./git/diff.js";
 import { resolveRefs } from "./git/resolve.js";
 import { NocapEvents } from "./events.js";
+import { advanceChain, itemKey } from "./loop/antiGaming.js";
+import { computeChainId, type ChainStore } from "./loop/chain.js";
+import { parseRetractions } from "./loop/text.js";
 import { buildRepairPacket, repairText, type RepairPacket } from "./policy/repair.js";
 import { overallPolicy, totals } from "./policy/overall.js";
 import type { VerifyConfig, VerifyDeps } from "./ports.js";
@@ -36,6 +39,8 @@ export interface VerifyInput {
   head?: string;
   events?: NocapEvents;
   execStage?: ExecStage;
+  /** Proof chain: an explicit id, `auto`, or `new`. With a store, attempts continue after FAIL or MIXED. */
+  chain?: { id: string; store: ChainStore };
 }
 
 export interface VerifyOutput {
@@ -79,11 +84,33 @@ async function verifyInner(input: VerifyInput): Promise<VerifyOutput> {
     }
   }
 
-  const refs = await step(
+  let refs = await step(
     "resolve",
     () => resolveRefs({ git, fs: deps.fs, clock, repoPath: config.repoPath, runId, base: input.base, head: input.head }),
     (r) => `${r.baseSha.slice(0, 7)}..${r.headSha.slice(0, 7)}${r.headIsSnapshot ? " (snapshot)" : ""}`,
   );
+
+  // Proof chain: find the parent attempt, and keep its base so the diff stays cumulative.
+  let chainId = runId.replace(/[^a-z0-9]/gi, "").slice(0, 10);
+  let parent: Receipt | null = null;
+  if (input.chain && input.chain.id !== "new") {
+    const wanted =
+      input.chain.id === "auto"
+        ? computeChainId({
+            repoRoot: refs.repoRoot, baseSha: refs.baseSha, agent: config.agent,
+            taskId: config.alan?.taskId ?? null, sessionId: config.alan?.sessionId ?? null, branch: refs.branch,
+          })
+        : input.chain.id;
+    const last = await input.chain.store.latest(wanted);
+    chainId = wanted;
+    if (last && last.overall !== "PASS") {
+      parent = last;
+      if (!input.base && last.input.base !== refs.baseSha) {
+        refs = await resolveRefs({ git, fs: deps.fs, clock, repoPath: config.repoPath, runId, base: last.input.base, head: input.head });
+      }
+    }
+  }
+  const attempt = parent ? parent.chain.attempt + 1 : 1;
   const changeSet = await step(
     "diff",
     () => readChangeSet({ git, repoPath: refs.repoRoot, baseSha: refs.baseSha, headSha: refs.headSha }),
@@ -96,12 +123,13 @@ async function verifyInner(input: VerifyInput): Promise<VerifyOutput> {
     return r.exitCode === 0 ? r.stdout : null;
   };
 
+  const retractions = parseRetractions(summary);
   const extraction = await step(
     "extract",
     () =>
       extractWithLlm({
         llm: deps.llm,
-        summary,
+        summary: retractions.stripped,
         changedPaths: changeSet.files.map((f) => f.path),
         repoName: refs.repoRoot.split("/").pop() ?? "",
       }),
@@ -188,11 +216,34 @@ async function verifyInner(input: VerifyInput): Promise<VerifyOutput> {
   });
 
   const undisclosed = undisclosedChanges(changeSet.files, verdicts, claims);
-  const overall = overallPolicy(verdicts, globalFlags, undisclosed);
-  const sums = totals(verdicts, globalFlags);
   const claimPairs = claims.map((claim, i) => ({ claim, verdict: verdicts[i] as Verdict }));
   const open = claimPairs.filter((p) => p.verdict.status === "contradicted");
-  const chainId = runId.replace(/[^a-z0-9]/gi, "").slice(0, 10);
+
+  let chainItems: Receipt["chain"]["items"] = open.map((p) => ({
+    key: itemKey(p.claim.quote), quote: p.claim.quote, status: "open" as const, sinceAttempt: 1, resolvedAttempt: null,
+  }));
+  let chainOutcome: Receipt["chain"]["outcome"] = open.length === 0 ? "first_attempt" : "unresolved";
+  let gamed = false;
+  if (parent) {
+    const delta = await readChangeSet({ git, repoPath: refs.repoRoot, baseSha: parent.input.head, headSha: refs.headSha }).catch(() => null);
+    const deltaFlags = delta ? tamperFlags(delta) : [];
+    if (delta) {
+      const integrity = await countIntegrity({
+        changeSet: delta, summary,
+        readAtBase: (p) => show(parent.input.head, p),
+        readAtHead: (p) => show(refs.headSha, p),
+      });
+      if (integrity.flag) deltaFlags.push(integrity.flag);
+    }
+    const advanced = advanceChain({ parent, attempt, claims: claimPairs, retractions: retractions.quotes, deltaFlags });
+    chainItems = advanced.items;
+    chainOutcome = advanced.outcome;
+    gamed = advanced.gamed;
+    globalFlags.push(...advanced.flags);
+  }
+
+  const overall = gamed ? "FAIL" : overallPolicy(verdicts, globalFlags, undisclosed);
+  const sums = totals(verdicts, globalFlags);
 
   const receipt: Receipt = {
     schemaVersion: 1,
@@ -205,9 +256,9 @@ async function verifyInner(input: VerifyInput): Promise<VerifyOutput> {
       alan: config.alan,
     },
     chain: {
-      chainId, parentId: null, attempt: 1,
-      items: open.map((p) => ({ key: p.claim.id, quote: p.claim.quote, status: "open" as const, sinceAttempt: 1, resolvedAttempt: null })),
-      outcome: open.length === 0 ? "first_attempt" : "unresolved",
+      chainId, parentId: parent?.id ?? null, attempt,
+      items: chainItems,
+      outcome: chainOutcome,
     },
     actor: { agent: config.agent, model: config.model, role: config.role },
     claims: claimPairs,
@@ -221,6 +272,8 @@ async function verifyInner(input: VerifyInput): Promise<VerifyOutput> {
     tool: { name: "nocap", version: NOCAP_VERSION },
   };
   events.emit({ type: "receipt.done", runId, id: receipt.id, overall, totals: sums, durationMs: receipt.durationMs });
-  const repair = open.length > 0 ? buildRepairPacket(chainId, 1, overall, claimPairs) : null;
+  const unresolved = chainItems.filter((i) => i.status !== "fixed" && i.status !== "retracted");
+  const repair = unresolved.length > 0 || open.length > 0 ? buildRepairPacket(chainId, attempt, overall, claimPairs, chainItems) : null;
+  if (input.chain) await input.chain.store.save(chainId, receipt);
   return { receipt, repair };
 }

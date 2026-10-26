@@ -19,6 +19,7 @@ export const SCENARIOS = [
   "untracked",
   "tdd_trap",
   "fake_refactor",
+  "toothless_gamed",
 ] as const;
 
 export type ScenarioName = (typeof SCENARIOS)[number];

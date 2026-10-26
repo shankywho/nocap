@@ -14,3 +14,7 @@ export { renderTerminal } from "./render/terminal.js";
 export { renderJson } from "./render/json.js";
 export { verify, type VerifyInput, type VerifyOutput, type ExecStage } from "./pipeline.js";
 export { createExecStage, isSafeCommand, type ExecStageOptions } from "./exec/stage.js";
+export { advanceChain, itemKey } from "./loop/antiGaming.js";
+export { computeChainId, FsChainStore, MemoryChainStore, type ChainStore } from "./loop/chain.js";
+export { runLoop, type LoopDeps, type LoopResult, type StopReason } from "./loop/driver.js";
+export { parseRetractions, overlap, normaliseQuote } from "./loop/text.js";

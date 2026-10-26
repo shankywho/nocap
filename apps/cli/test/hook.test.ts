@@ -97,3 +97,72 @@ describe("init claude", () => {
   });
   void root;
 });
+
+describe("codex notify and gemini AfterAgent hooks", () => {
+  const dirs: string[] = [];
+  beforeAll(async () => {
+    cacheDir = await mkdtemp(join(tmpdir(), "nocap-hook2-"));
+    dirs.push(cacheDir);
+    await buildFixtures({ quiet: true, cacheDir, scenarios: ["toothless", "honest"] });
+  }, 120_000);
+  afterAll(async () => {
+    await Promise.all(dirs.map((d) => rm(d, { recursive: true, force: true })));
+  });
+
+  async function fireAgent(agent: "codex" | "gemini", scenario: string, payload: (cwd: string, summary: string) => unknown, env: Record<string, string> = {}) {
+    const summary = await readFile(join(fileURLToPath(new URL("../../..", import.meta.url)), "fixtures", "scenarios", scenario, "summary.md"), "utf8");
+    let stdout = "";
+    let stderr = "";
+    const code = await runHook(
+      { stdin: JSON.stringify(payload(join(cacheDir, scenario), summary)), stdout: (t) => (stdout += t), stderr: (t) => (stderr += t) },
+      { ...baseEnv, ...env },
+      agent,
+    );
+    return { code, stdout, stderr };
+  }
+  const codex = (cwd: string, summary: string) => ({ type: "agent-turn-complete", "thread-id": "t1", cwd, "input-messages": ["go"], "last-assistant-message": summary });
+  const gemini = (cwd: string, summary: string) => ({ session_id: "g1", cwd, hook_event_name: "AfterAgent", prompt: "go", prompt_response: summary, stop_hook_active: false });
+
+  it("codex: reports on stderr, never blocks, even with NOCAP_BLOCK=1", async () => {
+    const r = await fireAgent("codex", "toothless", codex, { NOCAP_BLOCK: "1" });
+    expect(r.code).toBe(0);
+    expect(r.stderr).toMatch(/nocap: FAIL 1✗/);
+    expect(r.stdout).toBe("");
+  });
+
+  it("codex: ignores other notification types", async () => {
+    const r = await fireAgent("codex", "toothless", (cwd, s) => ({ ...codex(cwd, s), type: "approval-requested" }));
+    expect(r.stderr).toBe("");
+  });
+
+  it("gemini: report-only by default, deny with NOCAP_BLOCK=1 and at most twice", async () => {
+    const quiet = await fireAgent("gemini", "toothless", gemini);
+    expect(quiet.stdout).toBe("");
+    expect(quiet.stderr).toMatch(/nocap: FAIL/);
+    const blocked = await fireAgent("gemini", "toothless", gemini, { NOCAP_BLOCK: "1" });
+    const out = JSON.parse(blocked.stdout) as { decision: string; reason: string };
+    expect(out.decision).toBe("deny");
+    expect(out.reason).toContain("repair packet");
+    await fireAgent("gemini", "toothless", gemini, { NOCAP_BLOCK: "1" });
+    expect((await fireAgent("gemini", "toothless", gemini, { NOCAP_BLOCK: "1" })).stdout).toBe("");
+  });
+
+  it("gemini: does not block when stop_hook_active is true; honest summaries pass silently of blocks", async () => {
+    const again = await fireAgent("gemini", "toothless", (c, s) => ({ ...gemini(c, s), session_id: "g2", stop_hook_active: true }), { NOCAP_BLOCK: "1" });
+    expect(again.stdout).toBe("");
+    const ok = await fireAgent("gemini", "honest", (c, s) => ({ ...gemini(c, s), session_id: "g3" }), { NOCAP_BLOCK: "1" });
+    expect(ok.stdout).toBe("");
+  });
+
+  it("malformed payloads exit 0 and say nothing on stdout", async () => {
+    let out = "";
+    const code = await runHook({ stdin: "{not json", stdout: (t) => (out += t), stderr: () => undefined }, baseEnv, "gemini");
+    expect(code).toBe(0);
+    expect(out).toBe("");
+  });
+
+  it("never prints secrets from the environment", async () => {
+    const r = await fireAgent("gemini", "toothless", gemini, { NOCAP_BLOCK: "1", LLM_API_KEY: "SENTINEL_KEY_zz", GITHUB_TOKEN: "SENTINEL_GH_zz" });
+    expect(r.stdout + r.stderr).not.toContain("SENTINEL");
+  });
+});

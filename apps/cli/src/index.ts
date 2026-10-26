@@ -5,7 +5,7 @@ import { Command } from "commander";
 import { NOCAP_VERSION } from "@nocap/core";
 import { runCheck, type CheckOptions } from "./commands/check.js";
 import { startStdioServer } from "@nocap/mcp";
-import { readStdinText, runHook } from "./commands/hook.js";
+import { HOOK_AGENTS, type HookAgent, readStdinText, runHook } from "./commands/hook.js";
 import { runInitClaude } from "./commands/init.js";
 import { runInitAll } from "./commands/initAll.js";
 import { runLoop } from "./commands/loop.js";
@@ -73,13 +73,15 @@ export function buildProgram(onExit: (code: number) => void = (code) => process.
 
   program
     .command("hook <agent>")
-    .description("agent hook entrypoint (stdin JSON). Currently: claude (Stop hook)")
-    .action(async (agent: string) => {
-      if (agent !== "claude") {
-        process.stderr.write(`nocap: hook '${agent}' is not supported yet.\n`);
+    .description("agent hook entrypoint (JSON on stdin, or as the last argument for codex notify): claude (Stop), codex (notify), gemini (AfterAgent)")
+    .argument("[payload]", "JSON payload (codex passes it as an argument)")
+    .action(async (agent: string, payload?: string) => {
+      if (!(HOOK_AGENTS as readonly string[]).includes(agent)) {
+        process.stderr.write(`nocap: hook '${agent}' is not supported. Use one of: ${HOOK_AGENTS.join(", ")}.\n`);
         return onExit(2);
       }
-      onExit(await runHook({ stdin: await readStdinText(), stdout: (t) => process.stdout.write(t), stderr: (t) => process.stderr.write(t) }));
+      const stdin = payload ?? (await readStdinText());
+      onExit(await runHook({ stdin, stdout: (t) => process.stdout.write(t), stderr: (t) => process.stderr.write(t) }, process.env, agent as HookAgent));
     });
 
   program

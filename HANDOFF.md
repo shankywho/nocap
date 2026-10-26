@@ -1,17 +1,14 @@
-# HANDOFF (after P9)
+# HANDOFF (after P10)
 
 ## Done
-- P0-P8c complete (see git log). 236 tests; one fixtures selfcheck test is flaky under full-suite load, passes alone.
-- P9 web (`apps/web`), all in mock mode, no keys: `src/server/{store,api,run,og}`, routes `/api/{receipts,receipts/[id],examples,chains/[id],scorecard,verify-pr,demo,demo/loop,health}`, `/r/[id]` (+raw, OG), `/c/[chainId]` (+OG), `/agents`, `/verify` (SSE via `src/ui/StreamRun`), landing, `/docs` (CLI help from `pnpm docs:cli`).
-- Core: `static/prVerify.ts`, `adapters/{github.mock,github.fetch,web}.ts`, subpath `@nocap/core/adapters/web`. `fixtures/github/` = demo/fixture-shop#7.
-- `pnpm examples:generate` writes `examples/ex-{toothless,loop-2,gamed-1,gamed,scope,count}.json` (seeded as examples).
-- `next build` passes. Tests: `apps/web/test/{api,demo}.test.ts` (integration 10 equivalent).
+- P0-P10 complete. 236 tests green, lint + typecheck clean, `pnpm -r build` ok, `pnpm eval` ok (B3 5/5, 0 false accusations, repair table, handoff yes/0).
+- P9 web (mock mode, no keys): receipts, proof chains, `/agents`, `/verify` SSE, PR mode (`static/prVerify.ts`), demo + loop demo streams, OG cards, landing, `/docs`. `pnpm examples:generate`, `pnpm docs:cli`.
+- P10: README (§15.1 order), docs/{ARCHITECTURE,BITECHECK,PRIOR_ART,DEMO_SCRIPT,LAUNCH,BUILD_LOG}.md, CHANGELOG. `pnpm pack:cli` builds a self-contained tarball; `npx nocap demo toothless` verified from an installed tarball. `pnpm build-log` regenerates BUILD_LOG.
+- Fixed: fixtures selfcheck test now uses a private cache dir (it raced other tests on `.cache/fixtures`).
+- Tagged v0.1.0 (local only; not pushed).
 
-## Notes
-- No Prisma/Playwright (offline). See DECISIONS.md. Live store = implement `ReceiptStore` with Prisma.
-- Landing "built for OpenFire by @handle" footer line and light/dark polish not done. Lighthouse not measured.
-- CLI could not add deps offline: no zod/execa in apps/cli.
-- Shells pass child env to `createExecStage({env})`; core never reads process.env.
-
-## Next
-- P10 docs + release: README (§15.1), docs/*.md (ARCHITECTURE, BITECHECK, PRIOR_ART, DEMO_SCRIPT, LAUNCH), CHANGELOG, CONTRIBUTING, `pnpm -r build`, CLI `npm pack`, then tag v0.1.0. Read NOCAP_BUILD.md §15.1, §15.4, Part B (B4, B5).
+## Human TODO (marked `TODO(human)` in README)
+- Record `docs/media/hero.gif`; deployed URL; demo video link; dogfooding paragraph; edit the thought-process draft.
+- Verify prior-art descriptions in docs/PRIOR_ART.md against each project; per-agent `init --all` config shapes are unverified (DECISIONS.md).
+- Not built (offline): Prisma store, Playwright smoke, Codex/Gemini hooks (P11), hosted Bitecheck (P12). Lighthouse not measured. Landing footer lacks the "built for OpenFire by @handle" line.
+- Push, CI run, deploy, publish the npm package.

@@ -32,7 +32,11 @@ export class ExecaExec implements ExecPort {
     } catch (error) {
       const timedOut = error instanceof Error && "timedOut" in error && error.timedOut === true;
       if (timedOut) {
-        return { stdout: "", stderr: `command timed out after ${opts.timeoutMs ?? 0}ms`, exitCode: 124 };
+        return {
+          stdout: "",
+          stderr: `command timed out after ${opts.timeoutMs ?? 0}ms`,
+          exitCode: 124,
+        };
       }
       return {
         stdout: "",

@@ -18,7 +18,7 @@ export default function Docs() {
 
       <H id="install">Install</H>
       <P>Needs Node 20+ and a git repository. No account. Try it on a built-in scenario first.</P>
-      <Pre>{"npx nocap demo toothless\nnpx nocap check --summary-file summary.md"}</Pre>
+      <Pre>{"npx nocap demo toothless\nnpx nocap check --summary summary.md"}</Pre>
 
       <H id="cli">CLI reference</H>
       <P>Generated from the commander help text. Exit codes: 0 pass, 1 contradicted, 2 usage or input error, 3 tamper with --strict.</P>

@@ -1,22 +1,17 @@
-# HANDOFF (after P8c)
+# HANDOFF (after P9)
 
 ## Done
-- P0-P8c complete. 228 tests green, lint + typecheck clean, `pnpm eval` exits 0 (B3 5/5, 0 false accusations, repair table, handoff: surfaced yes, attribution errors 0).
-- P4: verifiers, tamper, policy, repair, renderers, static `verify()`; `--no-exec` goldens (`UPDATE_GOLDEN=1` regenerates).
-- P5: `runners/`, `bitecheck/`, `exec/stage.ts`. P6 CLI: `check`, `demo`, `repair`, `publish`, exit codes 0/1/2/3, receipts in `.nocap/receipts`.
-- P7: `scripts/eval.ts` (B0-B3 + repair loop + handoff), writes `eval/results.md`.
-- P8: `adapters/local.ts` composition root; `hook claude`, `init claude`, `init --all`, `mcp` (7 tools), `bitecheck`, `chain`, Alan plugin + `docs/ALAN.md`.
-- P8b: proof chains, anti-gaming, `loop` driver, mock agent, scenario 9.
-- P8c: `ledger/{ledger,query}.ts`, `scorecard/aggregate.ts`, `check --since-last`, actor flags, cross_agent_overlap flag, `nocap handoff`, `nocap scorecard` (`commands/team.ts`), scenario 10 `handoff` (stages/), `pnpm demo handoff`. Tests: `mcp/test/handoff.test.ts` (16, 17, 18), `core/test/scorecard.test.ts` (20).
+- P0-P8c complete (see git log). 236 tests; one fixtures selfcheck test is flaky under full-suite load, passes alone.
+- P9 web (`apps/web`), all in mock mode, no keys: `src/server/{store,api,run,og}`, routes `/api/{receipts,receipts/[id],examples,chains/[id],scorecard,verify-pr,demo,demo/loop,health}`, `/r/[id]` (+raw, OG), `/c/[chainId]` (+OG), `/agents`, `/verify` (SSE via `src/ui/StreamRun`), landing, `/docs` (CLI help from `pnpm docs:cli`).
+- Core: `static/prVerify.ts`, `adapters/{github.mock,github.fetch,web}.ts`, subpath `@nocap/core/adapters/web`. `fixtures/github/` = demo/fixture-shop#7.
+- `pnpm examples:generate` writes `examples/ex-{toothless,loop-2,gamed-1,gamed,scope,count}.json` (seeded as examples).
+- `next build` passes. Tests: `apps/web/test/{api,demo}.test.ts` (integration 10 equivalent).
 
 ## Notes
-- CLI could not add deps offline: no zod/execa in apps/cli; node:child_process + hand validation.
+- No Prisma/Playwright (offline). See DECISIONS.md. Live store = implement `ReceiptStore` with Prisma.
+- Landing "built for OpenFire by @handle" footer line and light/dark polish not done. Lighthouse not measured.
+- CLI could not add deps offline: no zod/execa in apps/cli.
 - Shells pass child env to `createExecStage({env})`; core never reads process.env.
-- Vitest `-t` uses leaf test titles.
-- pytest/jest paths untested against real projects (parsers have samples only).
-- Nothing from P8b/P8c is committed yet (working tree dirty).
 
 ## Next
-- Commit P8b/P8c work.
-- P9 web: Prisma+Memory store, API routes, `/verify` SSE, `/r/[id]`, `/c/[chainId]`, `/agents` scorecard (min 10 claims, caption "self-reported runs, not a model benchmark"), landing, `/docs`, tests 10-11. Read NOCAP_BUILD.md §7.1, §15, §10.2.
-- Then P10 docs + release.
+- P10 docs + release: README (§15.1), docs/*.md (ARCHITECTURE, BITECHECK, PRIOR_ART, DEMO_SCRIPT, LAUNCH), CHANGELOG, CONTRIBUTING, `pnpm -r build`, CLI `npm pack`, then tag v0.1.0. Read NOCAP_BUILD.md §15.1, §15.4, Part B (B4, B5).

@@ -58,7 +58,7 @@ export function StreamRun({ endpoint, body, autostart = false, label = "Run" }: 
   return (
     <div className="space-y-3">
       {s.phase !== "running" && (
-        <button onClick={() => void run()} className="rounded-md bg-accent px-4 py-2 font-mono text-sm font-semibold text-black">
+        <button onClick={() => void run()} className="rounded-md bg-accent px-4 py-2 font-mono text-sm font-semibold text-on-accent">
           {s.phase === "idle" ? label : "Run again"}
         </button>
       )}

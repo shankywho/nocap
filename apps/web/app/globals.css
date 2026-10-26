@@ -1,15 +1,38 @@
 @import "tailwindcss";
 
+/* Proof-sheet palette: cool paper, navy ink, red pencil reserved for ✗. */
 :root {
-  --background: #08090a;
-  --foreground: #f2f4f5;
-  --muted: #8b949e;
-  --surface: #111214;
-  --hairline: rgba(255, 255, 255, 0.08);
-  --accent: #3ee0cf;
-  --verified: #3fb950;
-  --contradicted: #f85149;
-  --unverifiable: #d29922;
+  --background: #e9edf2;
+  --foreground: #0f1b2d;
+  --muted: #566277;
+  --surface: #f9fafc;
+  --sheet: #fdfdfe;
+  --hairline: rgba(15, 27, 45, 0.13);
+  --accent: #0f1b2d;
+  --on-accent: #f4f7fb;
+  --verified: #0b7a55;
+  --contradicted: #d1263b;
+  --unverifiable: #9a6b00;
+  --highlighter: rgba(255, 213, 74, 0.55);
+  --shadow: 0 1px 0 rgba(15, 27, 45, 0.06), 0 18px 40px -18px rgba(15, 27, 45, 0.25);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #09131f;
+    --foreground: #e7edf6;
+    --muted: #8c9bb2;
+    --surface: #0f1d2f;
+    --sheet: #12233a;
+    --hairline: rgba(231, 237, 246, 0.14);
+    --accent: #e7edf6;
+    --on-accent: #09131f;
+    --verified: #3ddc97;
+    --contradicted: #ff6577;
+    --unverifiable: #f2b84b;
+    --highlighter: rgba(242, 184, 75, 0.28);
+    --shadow: 0 1px 0 rgba(0, 0, 0, 0.4), 0 24px 50px -20px rgba(0, 0, 0, 0.7);
+  }
 }
 
 @theme inline {
@@ -17,23 +40,16 @@
   --color-foreground: var(--foreground);
   --color-muted: var(--muted);
   --color-surface: var(--surface);
+  --color-sheet: var(--sheet);
   --color-hairline: var(--hairline);
   --color-accent: var(--accent);
+  --color-on-accent: var(--on-accent);
   --color-verified: var(--verified);
   --color-contradicted: var(--contradicted);
   --color-unverifiable: var(--unverifiable);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: light) {
-  :root {
-    --background: #fbfbfc;
-    --foreground: #0b0c0d;
-    --muted: #5b636b;
-    --surface: #ffffff;
-    --hairline: rgba(0, 0, 0, 0.1);
-  }
+  --font-sans: var(--font-bricolage), system-ui, sans-serif;
+  --font-serif: var(--font-newsreader), Georgia, serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, monospace;
 }
 
 html,
@@ -43,8 +59,9 @@ body {
 }
 
 body {
-  font-family: var(--font-geist-sans), system-ui, sans-serif;
+  font-family: var(--font-bricolage), system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
+  font-optical-sizing: auto;
 }
 
 pre,
@@ -53,6 +70,74 @@ code {
 }
 
 *:focus-visible {
-  outline: 2px solid var(--accent);
+  outline: 2px solid var(--contradicted);
   outline-offset: 2px;
+}
+
+/* Crop marks: the four corner ticks printers add to a proof sheet. */
+.crop {
+  position: relative;
+}
+.crop::before,
+.crop::after {
+  content: "";
+  position: absolute;
+  inset: -14px;
+  pointer-events: none;
+  background:
+    linear-gradient(var(--foreground), var(--foreground)) top left / 12px 1px no-repeat,
+    linear-gradient(var(--foreground), var(--foreground)) top left / 1px 12px no-repeat,
+    linear-gradient(var(--foreground), var(--foreground)) top right / 12px 1px no-repeat,
+    linear-gradient(var(--foreground), var(--foreground)) top right / 1px 12px no-repeat;
+  opacity: 0.45;
+}
+.crop::after {
+  transform: rotate(180deg);
+}
+
+/* Faint registration grid behind the hero. */
+.gridbg {
+  background-image:
+    linear-gradient(var(--hairline) 1px, transparent 1px),
+    linear-gradient(90deg, var(--hairline) 1px, transparent 1px);
+  background-size: 56px 56px;
+  mask-image: radial-gradient(ellipse at 70% 30%, #000 0%, transparent 70%);
+}
+
+/* The red-pencil strike draws across a claim. */
+.strike {
+  background: linear-gradient(var(--contradicted), var(--contradicted)) no-repeat 0 58% / 0% 2.5px;
+  transition: background-size 0.55s cubic-bezier(0.6, 0, 0.2, 1);
+}
+.strike[data-on="true"] {
+  background-size: 100% 2.5px;
+}
+.hl {
+  background: linear-gradient(var(--highlighter), var(--highlighter)) no-repeat 0 88% / 0% 55%;
+  transition: background-size 0.4s ease;
+}
+.hl[data-on="true"] {
+  background-size: 100% 55%;
+}
+
+@keyframes stamp {
+  0% { opacity: 0; transform: scale(1.7) rotate(-14deg); }
+  60% { opacity: 1; transform: scale(0.94) rotate(-6deg); }
+  100% { opacity: 1; transform: scale(1) rotate(-6deg); }
+}
+@keyframes pop {
+  0% { transform: scale(0.4); opacity: 0; }
+  70% { transform: scale(1.2); }
+  100% { transform: scale(1); opacity: 1; }
+}
+.stamp {
+  animation: stamp 0.38s cubic-bezier(0.2, 0.9, 0.3, 1.1) both;
+}
+.pop {
+  animation: pop 0.3s ease-out both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .strike, .hl { transition: none; }
+  .stamp, .pop { animation: none; }
 }

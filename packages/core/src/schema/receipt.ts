@@ -32,9 +32,7 @@ export const Receipt = z.object({
     base: z.string(),
     head: z.string(),
     headIsSnapshot: z.boolean(),
-    alan: z
-      .object({ taskId: z.string().nullable(), sessionId: z.string().nullable() })
-      .nullable(),
+    alan: z.object({ taskId: z.string().nullable(), sessionId: z.string().nullable() }).nullable(),
   }),
   chain: z.object({
     chainId: z.string(),

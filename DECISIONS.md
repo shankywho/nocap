@@ -87,3 +87,17 @@ Anything that could not be confirmed against the source is marked **UNVERIFIED**
 - Decision: every runner invocation writes to an explicit `--outputFile`; the engine reads and parses that file. Fixture self-checks follow the same rule and read `.cache/fixtures/<name>.head.json`.
 - Alternatives: parsing the dot reporter's stdout (rejected: ANSI, locale and version churn).
 - Verified: Vitest 5.0.5 behaviour observed locally on 2026-10-26; Jest's `--outputFile` is documented at https://jestjs.io/docs/cli.
+
+## 2026-10-26 · P2 · Read-only git commands must not touch the user's index
+
+- Context: the working-tree invariant (§9.3) requires that status, stash, HEAD, branches and the index file are byte-identical after a run. `git status` and `git diff` refresh the index's stat cache and rewrite `.git/index` unless optional locks are off.
+- Decision: every git invocation goes through `SimpleGitPort`, which sets `GIT_OPTIONAL_LOCKS=0` by default and explicitly allows `GIT_INDEX_FILE` through simple-git's environment guard (simple-git 4 strips `GIT_*` variables otherwise). The snapshot uses a throwaway index file, so `git add -A` never stages into the user's index.
+- Alternatives: copying the index aside and restoring it (racy, and it would still clobber concurrent user work); accepting an index rewrite (breaks the stated invariant).
+- Verified: `git.resolve.test.ts` asserts the index mtime is unchanged across a snapshot run; simple-git 4's `allowEnvironment` option is documented in `dist/src/lib/types/index.d.ts`.
+
+## 2026-10-26 · P2 · Base ref selection falls back to the parent commit
+
+- Context: in a repository whose only branch is the current one (a fresh clone or a fixture repo), `merge-base(HEAD, main)` resolves to HEAD and the diff would be empty.
+- Decision: after resolving the default base, if it equals HEAD the engine uses `HEAD~1`. An explicit `--base` is never overridden.
+- Alternatives: requiring every caller to pass `--base` (the CLI must work with zero flags); comparing against the empty tree (would report every file as new).
+- Verified: `git.fixture.test.ts` shows the committed `honest` scenario diffing to exactly `src/retry.ts` and `test/retry.test.ts`.

@@ -102,3 +102,13 @@ describe("regexExtractor on the fixture summaries", () => {
     expect(claims[3]?.count).toBe(13);
   });
 });
+
+describe("symbol_added rule", () => {
+  it("extracts a backticked symbol with its path", () => {
+    const [claim] = extractClaims("Added `computeDelay()` in src/backoff.ts and exported it.", []);
+    expect(claim).toMatchObject({ type: "symbol_added", symbols: ["computeDelay"], paths: ["src/backoff.ts"] });
+  });
+  it("does not steal a file_created sentence", () => {
+    expect(extractClaims("Created `src/backoff.ts` with `computeDelay()`.", []).map((c) => c.type)).toEqual(["file_created", "symbol_added"]);
+  });
+});

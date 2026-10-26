@@ -18,4 +18,4 @@ All notable changes to this project are documented here. The format follows Keep
 - `hook codex` and `hook gemini`, GitHub Action, leakage tests (secrets, home paths, env, web responses).
 
 ### Not included
-- Prisma store, Playwright smoke test, hosted Bitecheck. See DECISIONS.md.
+- Prisma store, hosted Bitecheck. See DECISIONS.md.

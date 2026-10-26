@@ -176,3 +176,9 @@ Anything that could not be confirmed against the source is marked **UNVERIFIED**
 - Context: `@actions/core` is not a dependency and an action should run without an install step.
 - Decision: `action/src/run.ts` reads `INPUT_*` and the event file itself, runs `verifyLocal` on the checkout (base and head SHAs from the PR event) and posts or updates one comment marked `<!-- nocap-receipt -->` through `fetch`. `pnpm build:action` bundles it to `action/dist/index.js` (committed; `.gitignore` has an exception). Fork PRs are skipped. The verifier gets a minimal env without the GitHub token; with no `llm-api-key` it runs offline.
 - Verified: `action/test/run.test.ts` with a mocked GitHub API and real fixture repos (FAIL comment, update-in-place, fork skip, failed comment, token not passed to the verifier). `runs.using: node24` is the spec's value and unverified here.
+
+## 2026-10-26 · P9 · Playwright lives in its own `e2e/` package
+
+- Context: `pnpm add` in the workspace fails with a store-location mismatch (node_modules was installed by a different pnpm major version), and reinstalling the workspace was not worth the risk.
+- Decision: `e2e/` has its own `package.json` installed with npm, and is not in `pnpm-workspace.yaml`. Run `pnpm e2e` (after `npx playwright install chromium` once). The web server is `next build` + `next start`; `next dev` recompiles and reloads pages mid-test.
+- Verified: 4 smoke tests pass (landing → example receipt → CONTRADICTED → Trace tab; demo PR stream; repair loop FAIL → PASS; 404).

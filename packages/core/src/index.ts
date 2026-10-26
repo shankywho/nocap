@@ -8,7 +8,7 @@ export type { VerifyContext } from "./verifiers/helpers.js";
 export { tamperFlags } from "./tamper/rules.js";
 export { countIntegrity } from "./tamper/countIntegrity.js";
 export { overallPolicy, totals } from "./policy/overall.js";
-export { repairText, buildRepairPacket, repairMarkdown } from "./policy/repair.js";
+export { repairText, buildRepairPacket, repairMarkdown, type RepairPacket, type RepairItem } from "./policy/repair.js";
 export { renderMarkdown } from "./render/markdown.js";
 export { renderTerminal } from "./render/terminal.js";
 export { renderJson } from "./render/json.js";

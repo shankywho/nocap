@@ -46,4 +46,4 @@ writeFileSync(
 );
 cpSync(join(root, "apps/cli/README.md"), join(stage, "README.md"));
 const out = execFileSync("npm", ["pack", "--silent"], { cwd: stage, encoding: "utf8" }).trim();
-console.log(join(stage, out));
+process.stdout.write(`${join(stage, out)}\n`);

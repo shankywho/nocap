@@ -58,3 +58,15 @@ describe("receipts API", () => {
     expect(id).toBeTruthy();
   });
 });
+
+describe("example seed", () => {
+  it("loads examples/*.json as isExample and links the loop chain", async () => {
+    const { seedExamples } = await import("../src/server/store");
+    const store = new MemoryStore();
+    seedExamples(store, new URL("../../../examples", import.meta.url).pathname);
+    const ex = await store.examples();
+    expect(ex.map((e) => e.id).sort()).toEqual(["ex-count", "ex-loop-2", "ex-scope", "ex-toothless"]);
+    const chainRows = await store.chain(ex.find((e) => e.id === "ex-toothless")!.receipt.chain.chainId);
+    expect(chainRows.map((r) => r.receipt.overall)).toEqual(["FAIL", "PASS"]);
+  });
+});

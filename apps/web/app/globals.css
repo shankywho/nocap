@@ -1,0 +1,58 @@
+@import "tailwindcss";
+
+:root {
+  --background: #08090a;
+  --foreground: #f2f4f5;
+  --muted: #8b949e;
+  --surface: #111214;
+  --hairline: rgba(255, 255, 255, 0.08);
+  --accent: #3ee0cf;
+  --verified: #3fb950;
+  --contradicted: #f85149;
+  --unverifiable: #d29922;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-muted: var(--muted);
+  --color-surface: var(--surface);
+  --color-hairline: var(--hairline);
+  --color-accent: var(--accent);
+  --color-verified: var(--verified);
+  --color-contradicted: var(--contradicted);
+  --color-unverifiable: var(--unverifiable);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+@media (prefers-color-scheme: light) {
+  :root {
+    --background: #fbfbfc;
+    --foreground: #0b0c0d;
+    --muted: #5b636b;
+    --surface: #ffffff;
+    --hairline: rgba(0, 0, 0, 0.1);
+  }
+}
+
+html,
+body {
+  background: var(--background);
+  color: var(--foreground);
+}
+
+body {
+  font-family: var(--font-geist-sans), system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+pre,
+code {
+  font-family: var(--font-geist-mono), ui-monospace, monospace;
+}
+
+*:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}

@@ -1,0 +1,12 @@
+{
+  "overall": "FAIL",
+  "claims": [
+    {
+      "type": "tests_added",
+      "status": "contradicted",
+      "bitecheck": "toothless"
+    }
+  ],
+  "flags": [],
+  "mustNotContradict": false
+}

@@ -1,0 +1,18 @@
+{
+  "overall": "MIXED",
+  "claims": [
+    {
+      "type": "bug_fixed",
+      "status": "unverifiable"
+    },
+    {
+      "type": "tests_pass",
+      "status": "verified"
+    }
+  ],
+  "flags": [
+    "assertion_loosened",
+    "skip_added"
+  ],
+  "mustNotContradict": true
+}

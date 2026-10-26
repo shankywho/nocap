@@ -1,0 +1,21 @@
+{
+  "overall": "PASS",
+  "claims": [
+    {
+      "type": "tests_added",
+      "status": "verified",
+      "bitecheck": "bites"
+    },
+    {
+      "type": "bug_fixed",
+      "status": "verified",
+      "bitecheck": "bites"
+    },
+    {
+      "type": "tests_pass",
+      "status": "verified"
+    }
+  ],
+  "flags": [],
+  "mustNotContradict": true
+}

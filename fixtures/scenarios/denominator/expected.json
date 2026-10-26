@@ -1,0 +1,14 @@
+{
+  "overall": "FAIL",
+  "claims": [
+    {
+      "type": "tests_pass",
+      "status": "contradicted"
+    }
+  ],
+  "flags": [
+    "test_file_deleted",
+    "test_count_dropped"
+  ],
+  "mustNotContradict": false
+}

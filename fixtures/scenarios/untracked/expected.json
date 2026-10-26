@@ -1,0 +1,20 @@
+{
+  "overall": "PASS",
+  "claims": [
+    {
+      "type": "file_created",
+      "status": "verified"
+    },
+    {
+      "type": "symbol_added",
+      "status": "verified"
+    },
+    {
+      "type": "tests_added",
+      "status": "verified",
+      "bitecheck": "import_only"
+    }
+  ],
+  "flags": [],
+  "mustNotContradict": true
+}

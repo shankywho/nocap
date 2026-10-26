@@ -99,7 +99,7 @@ describe("dependency", () => {
 });
 
 describe("exec-backed claims", () => {
-  const suite = { runner: "vitest", total: 9, passed: 9, failed: 0, skipped: 0, durationMs: 1, tests: [], environmentError: null };
+  const suite = { runner: "vitest", total: 9, passed: 9, failed: 0, skipped: 0, durationMs: 1, tests: [], suiteErrors: [], exitCode: 0, stderrTail: "", environmentError: null };
   it("tests_pass", async () => {
     expect(await status(claim({ type: "tests_pass", count: 9 }), ctx([], [], { suite }))).toBe("verified");
     expect(await status(claim({ type: "tests_pass", count: 12 }), ctx([], [], { suite }))).toBe("contradicted");

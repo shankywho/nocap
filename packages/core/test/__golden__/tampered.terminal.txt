@@ -1,0 +1,12 @@
+NOCAP  receipt ID  ·  agent: mock  ·  base BASE → (HEAD)
+──────────────────────────────────────────────────────────────────────────────
+! UNVERIFIABLE  "Fixed the thousands-separator bug in parsePrice"
+                Reverting the fix needs execution, which is disabled (--no-exec).
+! UNVERIFIABLE  "All tests pass"
+                Re-running the suite needs execution, which is disabled (--no-exec).
+                ! assertion loosened  test/parser.test.ts:6  toEqual → toBeTruthy
+                ! skip added  test/parser.test.ts:21  it.skip("parses a thousands separator without decimals", () => {
+──────────────────────────────────────────────────────────────────────────────
+UNDISCLOSED     test/parser.test.ts  M +5 −1   (changed, never mentioned)
+UNDISCLOSED     src/parser.ts  M +2 −9   (changed, never mentioned)
+RESULT          MIXED · 0 verified · 0 contradicted · 2 unverifiable · 0.0s

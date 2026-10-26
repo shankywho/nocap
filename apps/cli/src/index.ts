@@ -7,7 +7,9 @@ import { runCheck, type CheckOptions } from "./commands/check.js";
 import { startStdioServer } from "@nocap/mcp";
 import { readStdinText, runHook } from "./commands/hook.js";
 import { runInitClaude } from "./commands/init.js";
+import { runInitAll } from "./commands/initAll.js";
 import { runLoop } from "./commands/loop.js";
+import { runBitecheck, runChain } from "./commands/chain.js";
 import { runDemo } from "./commands/demo.js";
 import { runPublish } from "./commands/publish.js";
 import { runRepair } from "./commands/repair.js";
@@ -78,11 +80,15 @@ export function buildProgram(onExit: (code: number) => void = (code) => process.
     });
 
   program
-    .command("init <agent>")
-    .description("print or install the hook for an agent (claude). --write to apply")
-    .option("--write", "write the config instead of printing it")
-    .option("--user", "use the user-level settings file")
-    .action(async (agent: string, opts: { write?: boolean; user?: boolean }) => {
+    .command("init [agent]")
+    .description("wire nocap into your agents: `init --all` detects them all; `init claude` installs only the Claude Code hook")
+    .option("--all", "detect every installed agent and configure MCP + hooks + AGENTS.md")
+    .option("--write", "apply the changes (default is a dry run)")
+    .option("--user", "allow writing user-level config (needed for Codex)")
+    .action(async (agent: string | undefined, opts: { all?: boolean; write?: boolean; user?: boolean }) => {
+      if (opts.all || agent === "all") {
+        return onExit(await runInitAll({ write: opts.write === true, user: opts.user === true, env: { cwd: process.cwd(), home: process.env.HOME ?? "", path: process.env.PATH ?? "" } }));
+      }
       if (agent !== "claude") {
         process.stderr.write(`nocap: init '${agent}' is not supported yet.\n`);
         return onExit(2);
@@ -96,6 +102,17 @@ export function buildProgram(onExit: (code: number) => void = (code) => process.
     .action(async () => {
       await startStdioServer();
     });
+
+  program
+    .command("bitecheck <testFiles...>")
+    .description("prove specific tests bite: they must fail without the source change")
+    .option("--base <ref>", "base ref")
+    .action(async (files: string[], opts: { base?: string }) => onExit(await runBitecheck(files, opts)));
+
+  program
+    .command("chain [chainId]")
+    .description("print the proof-chain timeline (default: the latest chain)")
+    .action(async (chainId: string | undefined) => onExit(await runChain(chainId)));
 
   program
     .command("repair [receiptFile]")

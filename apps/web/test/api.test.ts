@@ -11,6 +11,8 @@ import { GET as chain } from "../app/api/chains/[chainId]/route";
 const sample = Receipt.parse(
   JSON.parse(readFileSync(new URL("../../../packages/core/test/__golden__/toothless.noexec.json", import.meta.url), "utf8")),
 );
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const json = async (r: Response) => (await r.json()) as any;
 const post = (body: string) => POST(new Request("http://x.test/api/receipts", { method: "POST", body }));
 const ctx = (id: string) => ({ params: Promise.resolve({ id }) });
 
@@ -20,10 +22,10 @@ describe("receipts API", () => {
   it("publishes, fetches, renders raw markdown and deletes with the token", async () => {
     const res = await post(JSON.stringify({ ...sample, extra: "stripped" }));
     expect(res.status).toBe(201);
-    const { id, url, deleteToken } = await res.json();
+    const { id, url, deleteToken } = await json(res);
     expect(url).toBe(`http://x.test/r/${id}`);
 
-    const got = await (await getOne(new Request(url), ctx(id))).json();
+    const got = await json(await getOne(new Request(url), ctx(id)));
     expect(got.id).toBe(id);
     expect(got.extra).toBeUndefined();
 
@@ -41,18 +43,18 @@ describe("receipts API", () => {
   it("rejects bad JSON and invalid receipts with the error envelope", async () => {
     const a = await post("{nope");
     expect(a.status).toBe(400);
-    expect((await a.json()).error.code).toBe("INVALID_INPUT");
+    expect((await json(a)).error.code).toBe("INVALID_INPUT");
     const b = await post(JSON.stringify({ schemaVersion: 1 }));
     expect(b.status).toBe(400);
   });
 
   it("serves chains and the scorecard (n/a below 10 claims) with the caption", async () => {
-    const { id } = await (await post(JSON.stringify(sample))).json();
+    const { id } = await json(await post(JSON.stringify(sample)));
     const c = await chain(new Request("http://x.test"), { params: Promise.resolve({ chainId: sample.chain.chainId }) });
     expect(c.status).toBe(200);
-    expect((await c.json()).receipts).toHaveLength(1);
+    expect((await json(c)).receipts).toHaveLength(1);
     expect((await chain(new Request("http://x.test"), { params: Promise.resolve({ chainId: "zzz" }) })).status).toBe(404);
-    const s = await (await scorecard()).json();
+    const s = await json(await scorecard());
     expect(s.caption).toContain("not a model benchmark");
     expect(s.rows[0].verifiedPct).toBeNull();
     expect(id).toBeTruthy();

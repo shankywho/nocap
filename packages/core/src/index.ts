@@ -13,3 +13,4 @@ export { renderMarkdown } from "./render/markdown.js";
 export { renderTerminal } from "./render/terminal.js";
 export { renderJson } from "./render/json.js";
 export { verify, type VerifyInput, type VerifyOutput, type ExecStage } from "./pipeline.js";
+export { createExecStage, isSafeCommand, type ExecStageOptions } from "./exec/stage.js";

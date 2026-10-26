@@ -19,7 +19,7 @@ export function suiteEvidence(ctx: VerifyContext): Evidence[] {
       failed: s.failed,
       skipped: s.skipped,
       durationMs: s.durationMs,
-      tests: s.tests.slice(0, 50),
+      tests: s.tests.slice(0, 50).map((t) => ({ file: t.file, title: t.title, status: t.status })),
     },
   ];
 }

@@ -1,4 +1,4 @@
-# HANDOFF (after P8b)
+# HANDOFF (after P8 minus init --all)
 
 ## Done
 - P0-P4 + P5. 164 tests green, lint/typecheck clean.
@@ -16,6 +16,9 @@
 - eval.ts now prints the repair-loop table (all 5 rows match spec) and fails if a row deviates. Handoff eval still pending (P8c).
 - Tests: apps/cli/test/loop.test.ts (integration 13-15), packages/core/test/loop.test.ts.
 
+- P8: core `adapters/local.ts` = composition root (`verifyLocal`, `bitecheckLocal`, `checkScopeLocal`, rc/store helpers) used by CLI, hook and MCP. CLI: `hook claude` (Stop hook; report-only; NOCAP_BLOCK=1 blocks max 2/session), `init claude [--write --user]` (merge-safe), `mcp`. MCP (`packages/mcp/src/{server,tools}.ts`): verify_claims, get_repair, bitecheck, check_scope (ledger_facts, ledger_check, scorecard come with P8c). Alan plugin in `plugins/nocap` + `docs/ALAN.md`. Tests: hook.test.ts, plugin.test.ts, mcp.test.ts.
+- Remaining P8: `init --all` (§8.10) and `nocap bitecheck`/`chain` CLI commands.
+
 ## Notes
 - CLI could not add deps offline (pnpm store mismatch): no zod/execa in apps/cli; uses node:child_process and hand validation.
 - Shells pass child env to `createExecStage({env})`; core never reads process.env.
@@ -25,4 +28,4 @@
 - pytest/jest paths untested against real projects (parsers have samples only).
 
 ## Next
-P8: Stop hook (`nocap hook claude`, Max 2 blocks per chain, NOCAP_BLOCK=1), MCP server (7 tools; packages/mcp), `init --all`, Alan plugin, `nocap bitecheck`/`chain` commands. Then P8c (actor, --since-last, ledger, handoff, scorecard, scenario 10). Read NOCAP_BUILD.md §3.3, §8.8-8.10, §10.3-10.4.
+`init --all` (§8.10, integration test 19), `nocap bitecheck`/`chain` commands. Then P8c (actor, --since-last, ledger, handoff, scorecard, scenario 10). Read NOCAP_BUILD.md §3.3, §8.8-8.10, §10.3-10.4.

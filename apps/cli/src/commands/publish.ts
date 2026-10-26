@@ -1,5 +1,5 @@
 import { publishReceipt } from "../io/publish.js";
-import { loadReceipt } from "../io/store.js";
+import { loadReceipt } from "@nocap/core/adapters";
 
 export async function runPublish(file: string, opts: { noHunks: boolean }, env: NodeJS.ProcessEnv = process.env): Promise<number> {
   try {

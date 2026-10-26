@@ -1,5 +1,5 @@
 import { buildRepairPacket, repairMarkdown } from "@nocap/core";
-import { latestReceiptFile, loadReceipt } from "../io/store.js";
+import { latestReceiptFile, loadReceipt } from "@nocap/core/adapters";
 
 export async function runRepair(file: string | undefined, json: boolean, cwd = process.cwd()): Promise<number> {
   try {

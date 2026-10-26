@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "nocap": {
+      "command": "npx",
+      "args": ["-y", "nocap", "mcp"]
+    }
+  }
+}

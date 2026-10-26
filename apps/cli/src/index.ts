@@ -4,6 +4,9 @@ import { fileURLToPath } from "node:url";
 import { Command } from "commander";
 import { NOCAP_VERSION } from "@nocap/core";
 import { runCheck, type CheckOptions } from "./commands/check.js";
+import { startStdioServer } from "@nocap/mcp";
+import { readStdinText, runHook } from "./commands/hook.js";
+import { runInitClaude } from "./commands/init.js";
 import { runLoop } from "./commands/loop.js";
 import { runDemo } from "./commands/demo.js";
 import { runPublish } from "./commands/publish.js";
@@ -62,6 +65,37 @@ export function buildProgram(onExit: (code: number) => void = (code) => process.
     .option("--base <ref>", "base ref")
     .option("--verbose", "narrate each step")
     .action(async (opts) => onExit(await runLoop(opts)));
+
+  program
+    .command("hook <agent>")
+    .description("agent hook entrypoint (stdin JSON). Currently: claude (Stop hook)")
+    .action(async (agent: string) => {
+      if (agent !== "claude") {
+        process.stderr.write(`nocap: hook '${agent}' is not supported yet.\n`);
+        return onExit(2);
+      }
+      onExit(await runHook({ stdin: await readStdinText(), stdout: (t) => process.stdout.write(t), stderr: (t) => process.stderr.write(t) }));
+    });
+
+  program
+    .command("init <agent>")
+    .description("print or install the hook for an agent (claude). --write to apply")
+    .option("--write", "write the config instead of printing it")
+    .option("--user", "use the user-level settings file")
+    .action(async (agent: string, opts: { write?: boolean; user?: boolean }) => {
+      if (agent !== "claude") {
+        process.stderr.write(`nocap: init '${agent}' is not supported yet.\n`);
+        return onExit(2);
+      }
+      onExit(await runInitClaude({ write: opts.write === true, user: opts.user === true }));
+    });
+
+  program
+    .command("mcp")
+    .description("start the MCP stdio server (verify_claims, get_repair, bitecheck, check_scope, ...)")
+    .action(async () => {
+      await startStdioServer();
+    });
 
   program
     .command("repair [receiptFile]")

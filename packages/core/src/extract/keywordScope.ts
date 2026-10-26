@@ -4,6 +4,7 @@ export interface Mapping {
   concept: string;
   globs: string[];
   matchedFiles: string[];
+  source?: "llm" | "keyword" | "user";
 }
 
 function stemsFor(concept: string): string[] {

@@ -1,0 +1,202 @@
+{
+  "schemaVersion": 1,
+  "id": "ID",
+  "runId": "RUN",
+  "createdAt": "T",
+  "input": {
+    "mode": "local",
+    "agent": "mock",
+    "summary": "Wrote a failing test for the 1,000 parsing bug first, then fixed parsePrice. All 13 tests pass.\n",
+    "repo": null,
+    "pr": null,
+    "base": "BASE",
+    "head": "HEAD",
+    "headIsSnapshot": false,
+    "alan": null
+  },
+  "chain": {
+    "chainId": "runtddtrap",
+    "parentId": null,
+    "attempt": 1,
+    "items": [],
+    "outcome": "first_attempt"
+  },
+  "actor": {
+    "agent": "mock",
+    "model": null,
+    "role": null
+  },
+  "claims": [
+    {
+      "claim": {
+        "id": "c1",
+        "quote": "Wrote a failing test for the 1,000 parsing bug first, then fixed parsePrice.",
+        "type": "tests_added",
+        "subject": "1 000 parsing bug first then fixed parsePrice",
+        "keywords": [
+          "000",
+          "parsing",
+          "bug",
+          "fixed",
+          "parse",
+          "price",
+          "parser",
+          "tokenize"
+        ],
+        "paths": [],
+        "symbols": [],
+        "count": null,
+        "command": null,
+        "span": [
+          0,
+          76
+        ]
+      },
+      "verdict": {
+        "status": "unverifiable",
+        "reason": "Reverting the change to test the tests needs execution, which is disabled (--no-exec).",
+        "evidence": [],
+        "flags": [],
+        "bitecheck": null,
+        "repair": null
+      }
+    },
+    {
+      "claim": {
+        "id": "c2",
+        "quote": "fixed parsePrice.",
+        "type": "bug_fixed",
+        "subject": "parsePrice",
+        "keywords": [
+          "parse",
+          "price",
+          "parser",
+          "tokenize",
+          "currency",
+          "amount"
+        ],
+        "paths": [],
+        "symbols": [],
+        "count": null,
+        "command": null,
+        "span": [
+          59,
+          76
+        ]
+      },
+      "verdict": {
+        "status": "unverifiable",
+        "reason": "Reverting the fix needs execution, which is disabled (--no-exec).",
+        "evidence": [],
+        "flags": [],
+        "bitecheck": null,
+        "repair": null
+      }
+    },
+    {
+      "claim": {
+        "id": "c3",
+        "quote": "All 13 tests pass.",
+        "type": "tests_pass",
+        "subject": null,
+        "keywords": [],
+        "paths": [],
+        "symbols": [],
+        "count": 13,
+        "command": null,
+        "span": [
+          77,
+          95
+        ]
+      },
+      "verdict": {
+        "status": "unverifiable",
+        "reason": "Re-running the suite needs execution, which is disabled (--no-exec).",
+        "evidence": [],
+        "flags": [],
+        "bitecheck": null,
+        "repair": null
+      }
+    }
+  ],
+  "undisclosed": [
+    {
+      "kind": "file",
+      "path": "test/parser.test.ts",
+      "status": "M",
+      "additions": 4,
+      "deletions": 0,
+      "previousPath": null
+    },
+    {
+      "kind": "file",
+      "path": "src/parser.ts",
+      "status": "M",
+      "additions": 2,
+      "deletions": 9,
+      "previousPath": null
+    }
+  ],
+  "globalFlags": [],
+  "totals": {
+    "verified": 0,
+    "contradicted": 0,
+    "unverifiable": 3,
+    "flags": 0
+  },
+  "overall": "MIXED",
+  "model": {
+    "provider": "offline",
+    "id": "offline",
+    "degraded": false
+  },
+  "trace": [
+    {
+      "step": "resolve",
+      "ms": 0,
+      "status": "ok",
+      "detail": "3be732b..4fe3f89"
+    },
+    {
+      "step": "diff",
+      "ms": 0,
+      "status": "ok",
+      "detail": "2 files"
+    },
+    {
+      "step": "extract",
+      "ms": 0,
+      "status": "ok",
+      "detail": "3 claims"
+    },
+    {
+      "step": "scope",
+      "ms": 0,
+      "status": "ok",
+      "detail": "0 concepts"
+    },
+    {
+      "step": "suite",
+      "ms": 0,
+      "status": "skipped",
+      "detail": "execution disabled"
+    },
+    {
+      "step": "verify",
+      "ms": 0,
+      "status": "ok",
+      "detail": "3 verdicts"
+    },
+    {
+      "step": "tamper",
+      "ms": 0,
+      "status": "ok",
+      "detail": "0 flags"
+    }
+  ],
+  "durationMs": 0,
+  "tool": {
+    "name": "nocap",
+    "version": "0.1.0"
+  }
+}

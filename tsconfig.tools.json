@@ -15,6 +15,9 @@
       ],
       "@nocap/mcp": [
         "packages/mcp/src/server.ts"
+      ],
+      "@nocap/core/adapters": [
+        "packages/core/src/adapters/index.ts"
       ]
     }
   },

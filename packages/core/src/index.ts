@@ -1,5 +1,4 @@
-export const NOCAP_VERSION = "0.1.0";
-export const NOCAP_NAME = "nocap" as const;
+export * from "./version.js";
 
 export * from "./ports.js";
 export * from "./events.js";
@@ -13,3 +12,4 @@ export { repairText, buildRepairPacket, repairMarkdown } from "./policy/repair.j
 export { renderMarkdown } from "./render/markdown.js";
 export { renderTerminal } from "./render/terminal.js";
 export { renderJson } from "./render/json.js";
+export { verify, type VerifyInput, type VerifyOutput, type ExecStage } from "./pipeline.js";

@@ -1,0 +1,225 @@
+{
+  "schemaVersion": 1,
+  "id": "ID",
+  "runId": "RUN",
+  "createdAt": "T",
+  "input": {
+    "mode": "local",
+    "agent": "mock",
+    "summary": "Created `src/backoff.ts` with `computeDelay()`.\nAdded tests for computeDelay.\n",
+    "repo": null,
+    "pr": null,
+    "base": "BASE",
+    "head": "HEAD",
+    "headIsSnapshot": true,
+    "alan": null
+  },
+  "chain": {
+    "chainId": "rununtrack",
+    "parentId": null,
+    "attempt": 1,
+    "items": [],
+    "outcome": "first_attempt"
+  },
+  "actor": {
+    "agent": "mock",
+    "model": null,
+    "role": null
+  },
+  "claims": [
+    {
+      "claim": {
+        "id": "c1",
+        "quote": "Created `src/backoff.ts` with `computeDelay()`.",
+        "type": "file_created",
+        "subject": null,
+        "keywords": [
+          "compute",
+          "delay"
+        ],
+        "paths": [
+          "src/backoff.ts"
+        ],
+        "symbols": [
+          "computeDelay"
+        ],
+        "count": null,
+        "command": null,
+        "span": [
+          0,
+          47
+        ]
+      },
+      "verdict": {
+        "status": "verified",
+        "reason": "src/backoff.ts was added.",
+        "evidence": [
+          {
+            "kind": "file",
+            "path": "src/backoff.ts",
+            "status": "A",
+            "additions": 3,
+            "deletions": 0,
+            "previousPath": null
+          }
+        ],
+        "flags": [],
+        "bitecheck": null,
+        "repair": null
+      }
+    },
+    {
+      "claim": {
+        "id": "c2",
+        "quote": "`computeDelay()`",
+        "type": "symbol_added",
+        "subject": "computeDelay",
+        "keywords": [
+          "compute",
+          "delay",
+          "sleep",
+          "backoff",
+          "timeout"
+        ],
+        "paths": [],
+        "symbols": [
+          "computeDelay"
+        ],
+        "count": null,
+        "command": null,
+        "span": [
+          31,
+          45
+        ]
+      },
+      "verdict": {
+        "status": "verified",
+        "reason": "'computeDelay' is declared in src/backoff.ts.",
+        "evidence": [
+          {
+            "kind": "hunk",
+            "path": "src/backoff.ts",
+            "startLine": 1,
+            "lines": [
+              "+export function computeDelay(attempt: number, baseMs = 100): number {",
+              "+  return baseMs * 2 ** (attempt - 1);",
+              "+}"
+            ]
+          },
+          {
+            "kind": "hunk",
+            "path": "test/backoff.test.ts",
+            "startLine": 1,
+            "lines": [
+              "+import { describe, expect, it } from \"vitest\";",
+              "+import { computeDelay } from \"../src/backoff\";",
+              "+",
+              "+describe(\"computeDelay\", () => {",
+              "+  it(\"doubles the delay on every attempt\", () => {",
+              "+    expect([1, 2, 3].map((attempt) => computeDelay(attempt))).toEqual([100, 200, 400]);",
+              "+  });",
+              "+});"
+            ]
+          }
+        ],
+        "flags": [],
+        "bitecheck": null,
+        "repair": null
+      }
+    },
+    {
+      "claim": {
+        "id": "c3",
+        "quote": "Added tests for computeDelay.",
+        "type": "tests_added",
+        "subject": "computeDelay",
+        "keywords": [
+          "compute",
+          "delay",
+          "sleep",
+          "backoff",
+          "timeout"
+        ],
+        "paths": [],
+        "symbols": [],
+        "count": null,
+        "command": null,
+        "span": [
+          48,
+          77
+        ]
+      },
+      "verdict": {
+        "status": "unverifiable",
+        "reason": "Reverting the change to test the tests needs execution, which is disabled (--no-exec).",
+        "evidence": [],
+        "flags": [],
+        "bitecheck": null,
+        "repair": null
+      }
+    }
+  ],
+  "undisclosed": [],
+  "globalFlags": [],
+  "totals": {
+    "verified": 2,
+    "contradicted": 0,
+    "unverifiable": 1,
+    "flags": 0
+  },
+  "overall": "MIXED",
+  "model": {
+    "provider": "offline",
+    "id": "offline",
+    "degraded": false
+  },
+  "trace": [
+    {
+      "step": "resolve",
+      "ms": 0,
+      "status": "ok",
+      "detail": "3be732b..a078af6 (snapshot)"
+    },
+    {
+      "step": "diff",
+      "ms": 0,
+      "status": "ok",
+      "detail": "2 files"
+    },
+    {
+      "step": "extract",
+      "ms": 0,
+      "status": "ok",
+      "detail": "3 claims"
+    },
+    {
+      "step": "scope",
+      "ms": 0,
+      "status": "ok",
+      "detail": "0 concepts"
+    },
+    {
+      "step": "suite",
+      "ms": 0,
+      "status": "skipped",
+      "detail": "execution disabled"
+    },
+    {
+      "step": "verify",
+      "ms": 0,
+      "status": "ok",
+      "detail": "3 verdicts"
+    },
+    {
+      "step": "tamper",
+      "ms": 0,
+      "status": "ok",
+      "detail": "0 flags"
+    }
+  ],
+  "durationMs": 0,
+  "tool": {
+    "name": "nocap",
+    "version": "0.1.0"
+  }
+}

@@ -17,6 +17,7 @@ const expectedCounts: Record<string, { passed: number; skipped: number }> = {
   untracked: { passed: 13, skipped: 0 },
   tdd_trap: { passed: 13, skipped: 0 },
   fake_refactor: { passed: 12, skipped: 0 },
+  toothless_gamed: { passed: 13, skipped: 0 },
 };
 
 function cleanEnv(): Record<string, string> {

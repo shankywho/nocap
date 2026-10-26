@@ -47,3 +47,7 @@ Generated from `git log --reverse`. Regenerate with `pnpm build-log`.
 | Mon 20:36 | docs: P9 decisions and handoff |
 | Mon 20:36 | docs: BITECHECK, ARCHITECTURE, PRIOR_ART |
 | Mon 20:37 | docs: README |
+| Mon 20:37 | docs: demo script, launch post, build log, changelog |
+| Mon 20:42 | build(cli): self-contained tarball with packaged demo (pnpm pack:cli) |
+| Mon 20:42 | fix(build): lint in pack-cli script |
+| Mon 20:43 | fix(build): lint globals in pack-cli script |

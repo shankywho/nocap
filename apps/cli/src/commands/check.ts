@@ -27,6 +27,8 @@ export interface CheckOptions {
   role?: string;
   verbose?: boolean;
   chain?: string;
+  sinceLast?: boolean;
+  scopeRole?: string[];
   cwd?: string;
   /** Test seam: inject summary text instead of reading stdin/file. */
   summaryText?: string;
@@ -54,7 +56,7 @@ export async function runCheck(opts: CheckOptions, env: NodeJS.ProcessEnv = proc
         {
           repoPath, summary, events, base: opts.base, head: opts.head, agent: opts.agent, actor: opts.actor, model: opts.model,
           role: opts.role, exec: opts.exec, offline: opts.offline, scope: opts.scope, testCommand: opts.testCmd,
-          testFormat: opts.testFormat, chain: opts.chain, llm: opts.llm,
+          testFormat: opts.testFormat, chain: opts.chain, sinceLast: opts.sinceLast, scopeRole: opts.scopeRole, llm: opts.llm,
         },
         env,
       );

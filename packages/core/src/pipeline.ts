@@ -9,6 +9,7 @@ import { advanceChain, itemKey } from "./loop/antiGaming.js";
 import { computeChainId, type ChainStore } from "./loop/chain.js";
 import { parseRetractions } from "./loop/text.js";
 import { buildRepairPacket, repairText, type RepairPacket } from "./policy/repair.js";
+import picomatch from "picomatch";
 import { overallPolicy, totals } from "./policy/overall.js";
 import type { VerifyConfig, VerifyDeps } from "./ports.js";
 import type { Claim } from "./schema/claim.js";
@@ -150,7 +151,8 @@ async function verifyInner(input: VerifyInput): Promise<VerifyOutput> {
           await mapScope({
             concept,
             files: filesAtHead,
-            overrides: { ...config.userScope, ...config.scopeOverrides },
+            // "Didn't touch src/backoff.ts" names a literal path, so map it to exactly that path.
+            overrides: { ...(claim.subject === null && claim.paths.length > 0 ? { [concept]: claim.paths } : {}), ...config.userScope, ...config.scopeOverrides },
             llm: config.offline ? null : deps.llm,
           }),
         );
@@ -209,6 +211,17 @@ async function verifyInner(input: VerifyInput): Promise<VerifyOutput> {
   const passVerdict = passIndex >= 0 ? verdicts[passIndex] : undefined;
   if (passVerdict) passVerdict.flags.push(...flags);
   else globalFlags.push(...flags);
+
+  // Advisory only: touching files inside another role's declared scope never produces a contradiction.
+  const me = config.role ?? config.agent;
+  for (const [role, globs] of Object.entries(config.roleScopes)) {
+    if (role === me || globs.length === 0) continue;
+    const inScope = picomatch(globs, { dot: true });
+    for (const f of changeSet.files) {
+      if (!inScope(f.path)) continue;
+      globalFlags.push({ rule: "cross_agent_overlap", severity: "warn", path: f.path, line: null, detail: `${me} changed ${f.path}, inside ${role}'s declared scope (${globs.join(", ")})` });
+    }
+  }
 
   claims.forEach((claim, i) => {
     const verdict = verdicts[i];

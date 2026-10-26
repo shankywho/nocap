@@ -213,6 +213,12 @@ const RULES: Rule[] = [
     build: (match) => ({ type: "file_deleted", path: match[1] ?? null, subject: match[1] ?? null }),
   },
   {
+    type: "symbol_added",
+    pattern:
+      /\b(?:added|introduced|implemented|wrote|exported)\s+(?:a\s+|the\s+|new\s+)?(?:function|helper|method|class|hook)?\s*`([A-Za-z_$][\w$]*)\(?\)?`/i,
+    build: (match) => ({ type: "symbol_added", subject: match[1] ?? null }),
+  },
+  {
     type: "dependency_added",
     pattern:
       /\b(?:added|installed)\s+(?:the\s+)?(?:dependency|package|library)\s+`?(@?[A-Za-z0-9_./-]+)`?/i,

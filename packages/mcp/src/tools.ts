@@ -1,7 +1,7 @@
 import { readFile, readdir } from "node:fs/promises";
 import { join } from "node:path";
-import { buildRepairPacket, renderMarkdown, repairMarkdown, Receipt } from "@nocap/core";
-import { bitecheckLocal, checkScopeLocal, latestReceiptFile, loadReceipt, verifyLocal, type Env } from "@nocap/core/adapters";
+import { buildRepairPacket, renderMarkdown, renderScorecard, repairMarkdown, Receipt } from "@nocap/core";
+import { bitecheckLocal, checkScopeLocal, latestReceiptFile, ledgerCheckLocal, ledgerFactsLocal, loadReceipt, scorecardLocal, verifyLocal, type Env } from "@nocap/core/adapters";
 
 export interface ToolResult {
   [key: string]: unknown;
@@ -35,6 +35,7 @@ export interface VerifyArgs {
   actor?: string | undefined;
   model?: string | undefined;
   role?: string | undefined;
+  since_last?: boolean | undefined;
 }
 
 export function verifyClaims(args: VerifyArgs, env: Env): Promise<ToolResult> {
@@ -42,7 +43,7 @@ export function verifyClaims(args: VerifyArgs, env: Env): Promise<ToolResult> {
     const { receipt, repair } = await verifyLocal(
       {
         repoPath: args.repo_path, summary: args.summary, base: args.base, exec: args.exec, chain: args.chain ?? "auto",
-        actor: args.actor, model: args.model, role: args.role, agent: args.actor ?? "mcp-agent",
+        actor: args.actor, model: args.model, role: args.role, agent: args.actor ?? "mcp-agent", sinceLast: args.since_last,
       },
       env,
     );
@@ -110,5 +111,26 @@ export function checkScope(args: { repo_path: string; concept: string; base?: st
           ? `'${r.concept}' (${r.globs.join(", ")}) is untouched.`
           : `'${r.concept}' (${r.globs.join(", ")}) was touched:\n${r.touched.map((f) => `- ${f.path}  ${f.status} +${f.additions} −${f.deletions}`).join("\n")}`;
     return result(md, r);
+  });
+}
+
+export function ledgerFacts(args: { repo_path: string; query?: string | undefined }): Promise<ToolResult> {
+  return guard(async () => {
+    const f = await ledgerFactsLocal({ repoPath: args.repo_path, query: args.query });
+    return result(f.markdown, { trusted: f.trusted, warnings: f.warnings, stale: f.stale });
+  });
+}
+
+export function ledgerCheck(args: { repo_path: string; statement: string }): Promise<ToolResult> {
+  return guard(async () => {
+    const answers = await ledgerCheckLocal({ repoPath: args.repo_path, statement: args.statement });
+    return result(answers.map((a) => `- "${a.claim}": ${a.answer}`).join("\n"), { answers });
+  });
+}
+
+export function scorecard(args: { repo_path: string }): Promise<ToolResult> {
+  return guard(async () => {
+    const rows = await scorecardLocal(args.repo_path);
+    return result(renderScorecard(rows), { rows });
   });
 }

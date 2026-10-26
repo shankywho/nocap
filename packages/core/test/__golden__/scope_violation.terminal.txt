@@ -1,0 +1,14 @@
+NOCAP  receipt ID  ·  agent: mock  ·  base BASE → (HEAD)
+──────────────────────────────────────────────────────────────────────────────
+✓ VERIFIED      "Added exponential backoff to `withRetry` in src/retry.ts"
+                src/retry.ts  M +2 −2
+! UNVERIFIABLE  "Added tests for the retry backoff in test/retry.test.ts"
+                Reverting the change to test the tests needs execution, which is disabled (--no-exec).
+✗ CONTRADICTED  "Didn't touch auth"
+                auth → src/auth/**, test/session.test.ts · src/auth/session.ts  M +2 −1
+                src/auth/session.ts changed although the summary says 'auth' was untouched.
+! UNVERIFIABLE  "All 13 tests pass"
+                Re-running the suite needs execution, which is disabled (--no-exec).
+──────────────────────────────────────────────────────────────────────────────
+RESULT          FAIL · 1 verified · 1 contradicted · 2 unverifiable · 0.0s
+Repair: run `nocap check --repair` to print fix instructions for your agent.

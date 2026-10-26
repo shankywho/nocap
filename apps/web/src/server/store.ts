@@ -2,6 +2,7 @@ import { createHash, randomBytes } from "node:crypto";
 import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { Receipt } from "@nocap/core";
+import { PrismaStore, type PrismaLike } from "./prismaStore";
 
 export interface StoredReceipt {
   id: string;
@@ -50,14 +51,49 @@ export class MemoryStore implements ReceiptStore {
   }
 }
 
-const g = globalThis as unknown as { __nocapStore?: ReceiptStore };
-export function getStore(): ReceiptStore {
-  if (!g.__nocapStore) {
-    const store = new MemoryStore();
-    seedExamples(store);
-    g.__nocapStore = store;
+const g = globalThis as unknown as { __nocapStore?: ReceiptStore; __nocapDb?: "ok" | "memory" | "down" };
+
+/** Memory store, or Postgres through Prisma when DATABASE_URL is set and MOCK_EXTERNALS is not true. Falls back to memory if the client is unavailable. */
+class LazyStore implements ReceiptStore {
+  private ready: Promise<ReceiptStore> | null = null;
+  private inner(): Promise<ReceiptStore> {
+    return (this.ready ??= (async () => {
+      const mem = new MemoryStore();
+      if (process.env.DATABASE_URL && process.env.MOCK_EXTERNALS === "false") {
+        try {
+          const name = "@prisma/client";
+          const mod = (await import(/* webpackIgnore: true */ name)) as { PrismaClient: new () => PrismaLike };
+          const store = new PrismaStore(new mod.PrismaClient());
+          seedExamples(mem);
+          for (const ex of await mem.examples()) await store.put(ex);
+          g.__nocapDb = "ok";
+          return store;
+        } catch {
+          g.__nocapDb = "down";
+        }
+      } else {
+        g.__nocapDb = "memory";
+      }
+      seedExamples(mem);
+      return mem;
+    })());
   }
-  return g.__nocapStore;
+  async put(r: StoredReceipt) { return (await this.inner()).put(r); }
+  async get(id: string) { return (await this.inner()).get(id); }
+  async remove(id: string) { return (await this.inner()).remove(id); }
+  async examples() { return (await this.inner()).examples(); }
+  async chain(chainId: string) { return (await this.inner()).chain(chainId); }
+  async published() { return (await this.inner()).published(); }
+}
+
+export function getStore(): ReceiptStore {
+  return (g.__nocapStore ??= new LazyStore());
+}
+export function dbStatus(): "ok" | "memory" | "down" {
+  return g.__nocapDb ?? (process.env.DATABASE_URL && process.env.MOCK_EXTERNALS === "false" ? "down" : "memory");
+}
+export function setStore(s: ReceiptStore) {
+  g.__nocapStore = s;
 }
 
 function examplesDir(): string | null {
@@ -80,9 +116,6 @@ export function seedExamples(store: MemoryStore, dir = examplesDir()) {
       receipt,
     });
   }
-}
-export function setStore(s: ReceiptStore) {
-  g.__nocapStore = s;
 }
 
 export const newId = () => randomBytes(8).toString("base64url").slice(0, 10);

@@ -182,3 +182,9 @@ Anything that could not be confirmed against the source is marked **UNVERIFIED**
 - Context: `pnpm add` in the workspace fails with a store-location mismatch (node_modules was installed by a different pnpm major version), and reinstalling the workspace was not worth the risk.
 - Decision: `e2e/` has its own `package.json` installed with npm, and is not in `pnpm-workspace.yaml`. Run `pnpm e2e` (after `npx playwright install chromium` once). The web server is `next build` + `next start`; `next dev` recompiles and reloads pages mid-test.
 - Verified: 4 smoke tests pass (landing → example receipt → CONTRADICTED → Trace tab; demo PR stream; repair loop FAIL → PASS; 404).
+
+## 2026-10-26 · P9 · PrismaStore written against a structural client; live DB unverified
+
+- Context: the workspace cannot `pnpm add` (store mismatch), and no Postgres is available here.
+- Decision: `apps/web/prisma/schema.prisma` is the spec's schema. `PrismaStore` depends only on a `PrismaLike` interface (the five client calls it makes), and `getStore()` returns a lazy store that dynamic-imports `@prisma/client` only when `DATABASE_URL` is set and `MOCK_EXTERNALS=false`, seeds the examples, and falls back to memory (health `db: "down"`) if the import or connection fails. To enable it: `pnpm add @prisma/client && pnpm add -D prisma`, `npx prisma migrate deploy`, set `DATABASE_URL`/`DIRECT_URL`.
+- Verified: `apps/web/test/prismaStore.test.ts` against an in-memory fake with the same call shapes (round trip, upsert, ordering, delete, schema re-validation on read). **Not verified against a real database.** GithubCache and RateLimit tables exist in the schema but are not used (the limiter is in-memory).

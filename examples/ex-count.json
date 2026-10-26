@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "id": "ex-count",
   "runId": "denominator-full",
-  "createdAt": "2026-10-26T14:57:19.668Z",
+  "createdAt": "2026-10-26T15:03:00.019Z",
   "input": {
     "mode": "local",
     "agent": "eval-agent",
@@ -114,7 +114,7 @@
             "passed": 2,
             "failed": 0,
             "skipped": 0,
-            "durationMs": 679,
+            "durationMs": 673,
             "tests": [
               {
                 "file": "test/retry.test.ts",
@@ -136,7 +136,7 @@
             "passed": 0,
             "failed": 2,
             "skipped": 0,
-            "durationMs": 675,
+            "durationMs": 662,
             "tests": [
               {
                 "file": "test/retry.test.ts",
@@ -176,7 +176,7 @@
             "passed": 2,
             "failed": 0,
             "skipped": 0,
-            "durationMs": 679,
+            "durationMs": 673,
             "tests": [
               {
                 "file": "test/retry.test.ts",
@@ -198,7 +198,7 @@
             "passed": 0,
             "failed": 2,
             "skipped": 0,
-            "durationMs": 675,
+            "durationMs": 662,
             "tests": [
               {
                 "file": "test/retry.test.ts",
@@ -289,7 +289,7 @@
             "passed": 10,
             "failed": 0,
             "skipped": 0,
-            "durationMs": 689,
+            "durationMs": 699,
             "tests": [
               {
                 "file": "test/parser.test.ts",
@@ -404,7 +404,7 @@
     },
     {
       "step": "diff",
-      "ms": 50,
+      "ms": 43,
       "status": "ok",
       "detail": "3 files"
     },
@@ -422,7 +422,7 @@
     },
     {
       "step": "suite",
-      "ms": 725,
+      "ms": 730,
       "status": "ok",
       "detail": "10/10"
     },
@@ -439,7 +439,7 @@
       "detail": "3 flags"
     }
   ],
-  "durationMs": 2697,
+  "durationMs": 2674,
   "tool": {
     "name": "nocap",
     "version": "0.1.0"

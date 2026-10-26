@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "id": "ex-loop-2",
   "runId": "toothless-full",
-  "createdAt": "2026-10-26T14:57:13.947Z",
+  "createdAt": "2026-10-26T15:02:49.679Z",
   "input": {
     "mode": "local",
     "agent": "eval-agent",
@@ -10,12 +10,12 @@
     "repo": null,
     "pr": null,
     "base": "3be732be61711eb7e0623abadf8b0484c22755de",
-    "head": "038c1f1e8d7a53f3d859c79b7285df44d34679fa",
+    "head": "c179d5403d62f86b198da289dec7f647a8b03436",
     "headIsSnapshot": true,
     "alan": null
   },
   "chain": {
-    "chainId": "73f045bd21",
+    "chainId": "f7b3207d99",
     "parentId": "toothless-full",
     "attempt": 2,
     "items": [
@@ -114,7 +114,7 @@
             "passed": 2,
             "failed": 0,
             "skipped": 0,
-            "durationMs": 740,
+            "durationMs": 696,
             "tests": [
               {
                 "file": "test/retry.test.ts",
@@ -136,7 +136,7 @@
             "passed": 0,
             "failed": 2,
             "skipped": 0,
-            "durationMs": 741,
+            "durationMs": 691,
             "tests": [
               {
                 "file": "test/retry.test.ts",
@@ -168,7 +168,7 @@
             "src/retry.ts"
           ],
           "deletedForRevert": [
-            ".nocap/chains/73f045bd21.json"
+            ".nocap/chains/f7b3207d99.json"
           ],
           "head": {
             "kind": "testRun",
@@ -178,7 +178,7 @@
             "passed": 2,
             "failed": 0,
             "skipped": 0,
-            "durationMs": 740,
+            "durationMs": 696,
             "tests": [
               {
                 "file": "test/retry.test.ts",
@@ -200,7 +200,7 @@
             "passed": 0,
             "failed": 2,
             "skipped": 0,
-            "durationMs": 741,
+            "durationMs": 691,
             "tests": [
               {
                 "file": "test/retry.test.ts",
@@ -291,7 +291,7 @@
             "passed": 13,
             "failed": 0,
             "skipped": 0,
-            "durationMs": 697,
+            "durationMs": 706,
             "tests": [
               {
                 "file": "test/legacy.test.ts",
@@ -370,7 +370,7 @@
   "undisclosed": [
     {
       "kind": "file",
-      "path": ".nocap/chains/73f045bd21.json",
+      "path": ".nocap/chains/f7b3207d99.json",
       "status": "A",
       "additions": 431,
       "deletions": 0,
@@ -401,19 +401,19 @@
   "trace": [
     {
       "step": "resolve",
-      "ms": 228,
+      "ms": 240,
       "status": "ok",
-      "detail": "05bdc1f..ae2cf14 (snapshot)"
+      "detail": "05bdc1f..65df09e (snapshot)"
     },
     {
       "step": "diff",
-      "ms": 46,
+      "ms": 54,
       "status": "ok",
       "detail": "4 files"
     },
     {
       "step": "extract",
-      "ms": 1,
+      "ms": 2,
       "status": "ok",
       "detail": "4 claims"
     },
@@ -425,7 +425,7 @@
     },
     {
       "step": "suite",
-      "ms": 729,
+      "ms": 743,
       "status": "ok",
       "detail": "13/13"
     },
@@ -437,12 +437,12 @@
     },
     {
       "step": "tamper",
-      "ms": 39,
+      "ms": 38,
       "status": "ok",
       "detail": "0 flags"
     }
   ],
-  "durationMs": 3218,
+  "durationMs": 3117,
   "tool": {
     "name": "nocap",
     "version": "0.1.0"

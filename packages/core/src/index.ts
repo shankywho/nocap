@@ -21,3 +21,5 @@ export { parseRetractions, overlap, normaliseQuote } from "./loop/text.js";
 export { Ledger, factKey, entriesFromReceipt, type LedgerEntry } from "./ledger/ledger.js";
 export { facts as ledgerFacts, check as ledgerCheck, renderFacts, isStale, type Facts, type Answer } from "./ledger/query.js";
 export { aggregate, renderScorecard, SCORECARD_CAPTION, type ScoreRow } from "./scorecard/aggregate.js";
+export { prVerify, parsePrUrl, PrUrlError, type PrVerifyInput } from "./static/prVerify.js";
+export { changeSetFromPatches } from "./git/diff.js";

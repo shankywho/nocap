@@ -5,3 +5,5 @@ export * from "./git.simple.js";
 export * from "./llm.mock.js";
 export * from "./llm.openaiCompat.js";
 export * from "./local.js";
+export * from "./github.mock.js";
+export * from "./github.fetch.js";

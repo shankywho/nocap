@@ -164,3 +164,32 @@ export async function readChangeSet(opts: DiffOptions): Promise<ChangeSet> {
   const hunks = toHunks(parseUnifiedDiff(patchResult.stdout));
   return { baseSha, headSha, files, hunks };
 }
+
+export interface PatchedFile {
+  filename: string;
+  status: "added" | "removed" | "modified" | "renamed" | "copied" | "changed";
+  additions: number;
+  deletions: number;
+  patch?: string | null;
+  previousFilename?: string | null;
+}
+
+/** Builds a ChangeSet from GitHub PR files (PR mode has patches but no checkout). Patch-less files keep their stats, with no hunks. */
+export function changeSetFromPatches(baseSha: string, headSha: string, input: PatchedFile[]): ChangeSet {
+  const statusOf = (s: PatchedFile["status"]): ChangeStatus => (s === "added" ? "A" : s === "removed" ? "D" : s === "renamed" ? "R" : "M");
+  const files: ChangedFile[] = input
+    .map((f) => ({
+      path: f.filename,
+      status: statusOf(f.status),
+      additions: f.additions,
+      deletions: f.deletions,
+      previousPath: f.previousFilename ?? null,
+      isBinary: false,
+    }))
+    .sort((a, b) => a.path.localeCompare(b.path));
+  const diff = input
+    .filter((f) => f.patch)
+    .map((f) => `diff --git a/${f.previousFilename ?? f.filename} b/${f.filename}\n--- a/${f.previousFilename ?? f.filename}\n+++ b/${f.filename}\n${f.patch}\n`)
+    .join("");
+  return { baseSha, headSha, files, hunks: diff ? toHunks(parseUnifiedDiff(diff)) : [] };
+}

@@ -2,6 +2,7 @@
   "extends": "./tsconfig.base.json",
   "compilerOptions": {
     "noEmit": true,
+    "jsx": "react-jsx",
     "module": "ESNext",
     "moduleResolution": "Bundler",
     "types": [
@@ -15,6 +16,9 @@
       ],
       "@nocap/mcp": [
         "packages/mcp/src/server.ts"
+      ],
+      "@nocap/core/adapters/web": [
+        "packages/core/src/adapters/web.ts"
       ],
       "@nocap/core/adapters": [
         "packages/core/src/adapters/index.ts"

@@ -3,6 +3,7 @@ import { bitecheck } from "../bitecheck/run.js";
 import { createWorktree, type Worktree } from "../git/worktree.js";
 import type { ExecPort, FsPort, GitPort } from "../ports.js";
 import { detectRunner } from "../runners/detect.js";
+import { collectedTooFew } from "../runners/classify.js";
 import { runTests } from "../runners/run.js";
 
 export interface ExecStageOptions {
@@ -34,14 +35,26 @@ export function createExecStage(opts: ExecStageOptions): ExecStage {
   };
 
   return {
-    async runSuite({ repoRoot, headSha }) {
-      const wt = await head(repoRoot, headSha);
-      const runner = opts.testCommand ? "custom" : await detectRunner(opts.fs, wt.path);
-      if (!runner) return null;
-      return runTests({
-        exec: opts.exec, fs: opts.fs, cwd: wt.path, runner, timeoutMs: opts.timeoutMs, env: opts.env,
-        customCommand: opts.testCommand ?? null, customFormat: opts.testFormat ?? null,
-      });
+    async runSuite({ repoRoot, headSha, inPlace }) {
+      const suite = async (cwd: string) => {
+        const runner = opts.testCommand ? "custom" : await detectRunner(opts.fs, cwd);
+        if (!runner) return null;
+        return runTests({
+          exec: opts.exec, fs: opts.fs, cwd, runner, timeoutMs: opts.timeoutMs, env: opts.env,
+          customCommand: opts.testCommand ?? null, customFormat: opts.testFormat ?? null,
+        });
+      };
+      // The user's working tree has their installed dependencies and built workspace packages; a fresh checkout does not.
+      // Running the project's own runner there changes nothing about the code. Bitecheck is the only user of the worktree.
+      if (inPlace) return suite(repoRoot);
+      const run = await suite((await head(repoRoot, headSha)).path);
+      if (!run || run.environmentError || (run.failed === 0 && run.total > 0)) return run;
+      // Failures (or nothing collected) in a bare checkout: compare with what the project collects in place before calling it a failure.
+      const reference = await suite(repoRoot);
+      if (reference && !reference.environmentError && collectedTooFew(run.total, reference.total)) {
+        return { ...run, environmentError: `a clean checkout collected ${run.total} tests but the project collects ${reference.total} in place: files or packages are missing, not failing` };
+      }
+      return run;
     },
 
     async bitecheck(claim, ctx) {

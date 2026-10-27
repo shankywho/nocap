@@ -1,6 +1,8 @@
 import { join } from "node:path";
 import type { ExecPort, FsPort } from "../ports.js";
 import { parseJestJson, type ParsedRun } from "./parseJest.js";
+import { environmentSummary, failuresAreEnvironment } from "./classify.js";
+import { tally } from "./tally.js";
 import { junitReporterMissing, nodeTestArgs, parseNodeTestScript } from "./nodeTest.js";
 import { parseJunit } from "./parseJunit.js";
 import type { RunnerName, TestRunResult } from "./types.js";
@@ -18,6 +20,11 @@ export interface RunTestsOptions {
   /** `--test-cmd` override with {files} and {out}; run through a shell. */
   customCommand?: string | null;
   customFormat?: "jest" | "junit" | null;
+  /**
+   * Treat a run whose failures are all module/package resolution or setup errors as an environment problem
+   * (never a failing test). Default true. Bitecheck's reverted run turns it off: an import error there is the signal.
+   */
+  classifyEnvironment?: boolean;
 }
 
 const tail = (s: string, n = 2000) => (s.length > n ? s.slice(-n) : s);
@@ -62,12 +69,17 @@ async function runNodeTests(opts: RunTestsOptions, outDir: string, started: numb
     else if (result.exitCode !== 0 && file) suiteErrors.push({ file, message: tail(result.stderr || result.stdout) });
   }
   if (tests.length === 0 && suiteErrors.length === 0) return empty("node", exitCode, stderr, Date.now() - started, "runner produced no parsable results");
-  const count = (s: string) => tests.filter((t) => t.status === s).length;
-  return { runner: "node", total: tests.length, passed: count("passed"), failed: count("failed"), skipped: count("skipped"), tests, suiteErrors, durationMs: Date.now() - started, exitCode, stderrTail: tail(stderr), environmentError: null };
+  return { runner: "node", ...tally(tests, suiteErrors), tests, suiteErrors, durationMs: Date.now() - started, exitCode, stderrTail: tail(stderr), environmentError: null };
+}
+
+export async function runTests(opts: RunTestsOptions): Promise<TestRunResult> {
+  const run = await runTestsRaw(opts);
+  if (opts.classifyEnvironment === false || run.environmentError !== null || !failuresAreEnvironment(run)) return run;
+  return { ...run, environmentError: `${run.failed} of ${run.total} failed to run because of a setup problem, not an assertion: ${environmentSummary(run)}` };
 }
 
 /** Always uses file reporters, never stdout JSON. */
-export async function runTests(opts: RunTestsOptions): Promise<TestRunResult> {
+async function runTestsRaw(opts: RunTestsOptions): Promise<TestRunResult> {
   const outDir = await opts.fs.mkdtemp("nocap-out-");
   const started = Date.now();
   try {

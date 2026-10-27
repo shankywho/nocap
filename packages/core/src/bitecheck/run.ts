@@ -5,6 +5,7 @@ import type { BitecheckResult } from "../schema/verdict.js";
 import type { ChangeSet } from "../git/types.js";
 import { isConfigPath, isDocsPath, isLockPath, isTestPath } from "../git/classify.js";
 import { createWorktree } from "../git/worktree.js";
+import { detectBuildCommand, listWorkspacePackages, packagesMissingBuild } from "../git/workspace.js";
 import { detectRunner } from "../runners/detect.js";
 import { escapeRegex, runTests } from "../runners/run.js";
 import type { TestRunResult } from "../runners/types.js";
@@ -54,7 +55,7 @@ function evidence(label: "head" | "reverted", run: TestRunResult, selected: Sele
     kind: "testRun",
     label,
     runner: run.runner,
-    total: mine.length,
+    total: mine.length + (mine.length === 0 ? run.suiteErrors.length : 0),
     passed: mine.filter((t) => t.status === "passed").length,
     failed: mine.filter((t) => t.status === "failed").length + (mine.length === 0 ? run.suiteErrors.length : 0),
     skipped: mine.filter((t) => t.status === "skipped").length,
@@ -97,6 +98,22 @@ export async function bitecheck(opts: BitecheckOptions): Promise<BitecheckResult
       customCommand: opts.testCommand ?? null, customFormat: opts.testFormat ?? null,
     };
 
+    // A workspace package that tests reach through its built output (dist/) has no output in a fresh checkout, and the
+    // output must be rebuilt after the revert: stale output would hide a toothless test. If it cannot be built the
+    // result is `environment`, never a verdict.
+    let build: { file: string; args: string[] } | null = null;
+    const missingBuild = await packagesMissingBuild(opts.fs, wt.path, await listWorkspacePackages(opts.fs, wt.path));
+    if (missingBuild.length > 0) {
+      build = await detectBuildCommand(opts.fs, wt.path);
+      if (!build) return result("environment", selected);
+    }
+    const rebuild = async (): Promise<boolean> => {
+      if (!build) return true;
+      const r = await opts.exec.run(build.file, build.args, { cwd: wt.path, env: opts.env, timeoutMs: opts.timeoutMs });
+      return r.exitCode === 0;
+    };
+    if (!(await rebuild())) return result("environment", selected);
+
     opts.onPhase?.("head", `${selected.length} test(s) in ${files.join(", ")}`);
     const head = await runTests(common);
     if (head.environmentError) return result("environment", selected);
@@ -133,8 +150,9 @@ export async function bitecheck(opts: BitecheckOptions): Promise<BitecheckResult
     const revertedFiles = revertTargets;
     const deletedForRevert = toDelete;
 
+    if (!(await rebuild())) return result("environment", selected, { head: headEv, revertedFiles, deletedForRevert, ...(stubMode ? { mode: "stub" as const, stubbed } : {}) });
     opts.onPhase?.("rerun", "re-running the selected tests against the reverted source");
-    const re = await runTests(common);
+    const re = await runTests({ ...common, classifyEnvironment: false });
     if (re.environmentError) return result("environment", selected, { head: headEv, revertedFiles, deletedForRevert });
     const reEv = evidence("reverted", re, selected);
     const onRe = pick(re, selected);

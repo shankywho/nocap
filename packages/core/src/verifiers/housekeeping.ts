@@ -4,7 +4,14 @@ import type { Verdict } from "../schema/verdict.js";
 import { contradicted, fileEvidence, hunkEvidence, unverifiable, verified, type VerifyContext } from "./helpers.js";
 
 /** `"version": "1.2.3"`, `version = "1.2.3"` (pyproject, Cargo, setup.cfg) and `export const X_VERSION = "1.2.3"`. */
-const VERSION_LINE = [/^\s*["']?version["']?\s*[:=]\s*["']v?(\d+\.\d+\.\d+[^"',\s]*)["']/i, /\b[A-Z_]*VERSION\s*(?:=|:\s*string\s*=)\s*["']v?(\d+\.\d+\.\d+[^"']*)["']/];
+// Not anchored to the line start: minified package.json keeps `"version"` in the middle of one long line.
+const VERSION_LINE = [
+  /["']?\bversion["']?\s*[:=]\s*["']v?(\d+\.\d+\.\d+[^"',\s}]*)["']/i,
+  /\b_*[A-Za-z_]*VERSION_*\s*(?::\s*string\s*)?=\s*["']v?(\d+\.\d+\.\d+[^"']*)["']/i,
+];
+
+/** Files that carry a project version. If one changed but no version could be read from the diff, we cannot say it did not change. */
+const MANIFEST = /(?:^|\/)(?:package\.json|pyproject\.toml|Cargo\.toml|setup\.py|setup\.cfg|VERSION|version\.[a-z]+|pom\.xml|build\.gradle(?:\.kts)?|[\w.-]+\.gemspec|__init__\.py|__version__\.py)$/i;
 
 function versionOf(line: string): string | null {
   for (const re of VERSION_LINE) {
@@ -26,6 +33,10 @@ export function verifyVersionBump(claim: Claim, ctx: VerifyContext): Verdict {
     }
   }
   if (changes.length === 0) {
+    const touched = ctx.changeSet.files.filter((f) => MANIFEST.test(f.path));
+    if (touched.length > 0) {
+      return unverifiable(`${touched.map((f) => f.path).join(", ")} changed, but no version field could be read from the diff.`, touched.slice(0, 6).map(fileEvidence));
+    }
     return contradicted("No version field changed in the diff.", [{ kind: "note", text: "looked for a version line in package.json, pyproject.toml, Cargo.toml, setup.cfg and *_VERSION constants" }]);
   }
   const evidenceFor = (items: typeof changes): Evidence[] => {

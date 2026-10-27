@@ -115,3 +115,43 @@ export async function detectBuildCommand(fs: FsPort, root: string): Promise<{ fi
   if (await fs.exists(join(root, "yarn.lock"))) return { file: "yarn", args: ["build"] };
   return { file: "npm", args: ["run", "build"] };
 }
+
+const SPECIFIER = /(?:\bfrom|\bimport|\brequire)\s*\(?\s*["']([^"']+)["']/g;
+const EXTS = [".ts", ".tsx", ".js", ".jsx", ".mjs", ".cjs", ".mts", ".cts"];
+
+async function resolveRelative(fs: FsPort, root: string, fromFile: string, spec: string): Promise<string | null> {
+  const base = join(root, fromFile, "..", spec);
+  const stripped = base.replace(/\.(?:[cm]?js|jsx)$/, "");
+  const candidates = [base, ...EXTS.map((e) => `${base}${e}`), ...EXTS.map((e) => `${stripped}${e}`), ...EXTS.map((e) => join(base, `index${e}`))];
+  for (const c of candidates) {
+    const st = await fs.stat(c).catch(() => null);
+    if (st?.isFile) return c.slice(root.length + 1);
+  }
+  return null;
+}
+
+/**
+ * Which of `names` the given files import, following relative imports (bounded). Used to decide whether a test
+ * needs a workspace package's built output: a test that only reaches source never needs a build.
+ */
+export async function importedWorkspaceNames(fs: FsPort, root: string, entryFiles: string[], names: string[], maxFiles = 80): Promise<Set<string>> {
+  const found = new Set<string>();
+  const seen = new Set<string>();
+  const queue = [...entryFiles];
+  while (queue.length > 0 && seen.size < maxFiles) {
+    const file = queue.shift() as string;
+    if (seen.has(file)) continue;
+    seen.add(file);
+    const text = await fs.readFile(join(root, file)).catch(() => "");
+    for (const m of text.matchAll(SPECIFIER)) {
+      const spec = m[1] as string;
+      if (spec.startsWith(".")) {
+        const next = await resolveRelative(fs, root, file, spec);
+        if (next && !seen.has(next)) queue.push(next);
+      } else {
+        for (const n of names) if (spec === n || spec.startsWith(`${n}/`)) found.add(n);
+      }
+    }
+  }
+  return found;
+}

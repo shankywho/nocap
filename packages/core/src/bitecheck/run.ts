@@ -6,7 +6,7 @@ import type { ChangeSet } from "../git/types.js";
 import { isConfigPath, isDocsPath, isLockPath, isTestPath } from "../git/classify.js";
 import { safeEnv } from "../exec/safeEnv.js";
 import { createWorktree } from "../git/worktree.js";
-import { detectBuildCommand, listWorkspacePackages, packagesMissingBuild } from "../git/workspace.js";
+import { detectBuildCommand, importedWorkspaceNames, listWorkspacePackages, packagesMissingBuild } from "../git/workspace.js";
 import { detectRunner } from "../runners/detect.js";
 import { escapeRegex, runTests } from "../runners/run.js";
 import type { TestRunResult } from "../runners/types.js";
@@ -105,7 +105,9 @@ export async function bitecheck(options: BitecheckOptions): Promise<BitecheckRes
     // result is `environment`, never a verdict.
     let build: { file: string; args: string[] } | null = null;
     const missingBuild = await packagesMissingBuild(opts.fs, wt.path, await listWorkspacePackages(opts.fs, wt.path));
-    if (missingBuild.length > 0) {
+    // Only when the selected tests (through their relative imports) actually reach such a package.
+    const needed = missingBuild.length > 0 ? await importedWorkspaceNames(opts.fs, wt.path, files, missingBuild.map((p) => p.name)) : new Set<string>();
+    if (needed.size > 0) {
       build = await detectBuildCommand(opts.fs, wt.path);
       if (!build) return result("environment", selected);
     }

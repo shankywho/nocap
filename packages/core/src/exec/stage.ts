@@ -65,8 +65,18 @@ export function createExecStage(options: ExecStageOptions): ExecStage {
       if (!run || run.environmentError || (run.failed === 0 && run.total > 0)) return run;
       // Failures (or nothing collected) in a bare checkout: compare with what the project collects in place before calling it a failure.
       const reference = await suite(repoRoot);
-      if (reference && !reference.environmentError && collectedTooFew(run.total, reference.total)) {
-        return { ...run, environmentError: `a clean checkout collected ${run.total} tests but the project collects ${reference.total} in place: files or packages are missing, not failing` };
+      if (reference && !reference.environmentError) {
+        if (collectedTooFew(run.total, reference.total)) {
+          return { ...run, environmentError: `a clean checkout collected ${run.total} tests but the project collects ${reference.total} in place: files or packages are missing, not failing` };
+        }
+        // Tests that fail in a bare checkout but pass in the working tree depend on files that are not committed
+        // (build output, caches, generated fixtures). That is the checkout, not the code: report `!`, never ✗.
+        const key = (t: { file: string; fullName: string }) => `${t.file}\u0000${t.fullName}`;
+        const failingHere = run.tests.filter((t) => t.status === "failed");
+        const failingThere = new Set(reference.tests.filter((t) => t.status === "failed").map(key));
+        if (failingHere.length > 0 && run.suiteErrors.length === 0 && failingHere.every((t) => !failingThere.has(key(t)))) {
+          return { ...run, environmentError: `${failingHere.length} test${failingHere.length === 1 ? "" : "s"} fail in a clean checkout of ${headSha.slice(0, 7)} but pass in your working tree, so they depend on uncommitted files (build output, caches, generated fixtures), not on the code under review` };
+        }
       }
       return run;
     },

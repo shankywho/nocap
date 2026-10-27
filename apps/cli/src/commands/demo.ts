@@ -5,6 +5,7 @@ import { fileURLToPath } from "node:url";
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import { tmpdir } from "node:os";
+import { llmStatus } from "@nocap/core/adapters";
 import { runCheck } from "./check.js";
 
 const run = promisify(execFile);
@@ -24,8 +25,25 @@ function findLayout(): Layout | null {
   return null;
 }
 
+/**
+ * The demo is deterministic and offline by default. `--live` uses the configured model key instead, and refuses
+ * (rather than silently falling back) when there is none.
+ */
+export function demoMode(live: boolean, env: NodeJS.ProcessEnv = process.env): { ok: true; offline: boolean } | { ok: false; message: string } {
+  if (!live) return { ok: true, offline: true };
+  if (llmStatus(env, false).mode !== "llm") {
+    return { ok: false, message: "demo --live needs a model key: run `nocap config set llm-key <key>` or set GROQ_API_KEY. Without --live the demo is deterministic and offline." };
+  }
+  return { ok: true, offline: false };
+}
+
 /** Builds a fixture scenario and verifies it with live output. Works from a source checkout or the npm package. */
-export async function runDemo(scenario: string, opts: { exec: boolean }): Promise<number> {
+export async function runDemo(scenario: string, opts: { exec: boolean; live?: boolean }): Promise<number> {
+  const mode = demoMode(opts.live === true);
+  if (!mode.ok) {
+    process.stderr.write(`nocap: ${mode.message}\n`);
+    return 2;
+  }
   const layout = findLayout();
   if (!layout) {
     process.stderr.write("nocap: demo fixtures not found (expected a nocap checkout or the npm package).\n");
@@ -67,7 +85,7 @@ export async function runDemo(scenario: string, opts: { exec: boolean }): Promis
     summaryText: summary,
     agent: "demo-agent",
     exec,
-    offline: true,
+    offline: mode.offline,
     verbose: true,
     repair: true,
   });

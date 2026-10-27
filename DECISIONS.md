@@ -234,7 +234,7 @@ Anything that could not be confirmed against the source is marked **UNVERIFIED**
 - Context: the landing page was redesigned around the hero painting (Eakins, The Chess Players, extended canvas) with cream documents on a dark wood wall.
 - Decisions:
   - Tokens are the sampled palette in `apps/web/app/globals.css`. `theme.test.ts` checks WCAG contrast (at least 4.5:1) for every text pair the page uses, and greps the landing files for banned styles (italics, em dashes, box-shadow and Tailwind `ring`/`shadow` utilities, blur, backdrop-filter, any gradient other than the two in `hero.tsx`).
-  - The strike-through that draws across a claim is a pseudo-element with a width transition, because a gradient line is not allowed.
+  - The strike-through on a claim is text-decoration: line-through with a colour fade, because a gradient line is not allowed and a pseudo-element only covers the first line of a wrapped claim.
   - Older pages (receipts, chains, agents, docs) keep their class names; `globals.css` maps the old tokens to the study palette so they render as cream documents.
   - The source image is 1915 px wide, so `hero-2400.*` is an upscale; it exists so wide screens get one file. The webp is served (the LCP element is the hero webp); the `.avif` files are generated but not referenced.
   - Chrome ignores an image that covers the whole viewport as a background. At 1440x900 the hero is shorter than the viewport and the LCP element is the hero webp; on shorter or narrower viewports the headline is the LCP element. The Playwright LCP check runs at 1440x900. Lighthouse reports the hero image as the LCP element in both desktop and mobile runs.

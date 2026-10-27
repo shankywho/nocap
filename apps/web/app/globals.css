@@ -283,18 +283,3 @@ a:hover .mark .check,
 main .grid > * {
   min-width: 0;
 }
-
-/* Lenis smooth scrolling (landing page). Wide receipts and code keep native scrolling via data-lenis-prevent. */
-html.lenis,
-html.lenis body {
-  height: auto;
-}
-.lenis.lenis-smooth {
-  scroll-behavior: auto !important;
-}
-.lenis.lenis-smooth [data-lenis-prevent] {
-  overscroll-behavior: contain;
-}
-.lenis.lenis-stopped {
-  overflow: hidden;
-}

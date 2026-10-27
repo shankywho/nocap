@@ -1,0 +1,35 @@
+NOCAP  receipt ac6d9a8c8b  ·  agent: unknown  ·  base 92e05bb → (1a294f9)
+──────────────────────────────────────────────────────────────────────────────
+✓ VERIFIED      "I didn't publish;"
+                No file mapped to 'publish' changed.
+✓ VERIFIED      "nocap config set llm-key and nocap config get work"
+                apps/cli/src/commands/config.ts  A +46 −0
+! UNVERIFIABLE  "Added functions are stubbed to return undefined"
+                The claim names no identifier to look for.
+! UNVERIFIABLE  "A test asserting only typeof mul === 'function' comes back TOOTHLESS"
+                The Bitecheck could not run in this environment.
+! UNVERIFIABLE  "A test asserting mul(2,3) === 6 comes back BITES"
+                The Bitecheck could not run in this environment.
+✓ VERIFIED      "docs/BITECHECK.md is updated"
+                docs/BITECHECK.md  M +10 −5
+✓ VERIFIED      "version is 0.1.1"
+                apps/cli/package.json  M +1 −1
+──────────────────────────────────────────────────────────────────────────────
+UNDISCLOSED     apps/cli/test/config.test.ts  A +101 −0   (changed, never mentioned)
+UNDISCLOSED     packages/core/test/__golden__/denominator.terminal.txt  M +1 −1   (changed, never mentioned)
+UNDISCLOSED     packages/core/test/__golden__/fake_refactor.noexec.json  M +1 −1   (changed, never mentioned)
+UNDISCLOSED     packages/core/test/__golden__/honest.noexec.json  M +1 −1   (changed, never mentioned)
+UNDISCLOSED     packages/core/test/__golden__/scope_violation.md  M +1 −1   (changed, never mentioned)
+UNDISCLOSED     packages/core/test/__golden__/scope_violation.noexec.json  M +1 −1   (changed, never mentioned)
+UNDISCLOSED     packages/core/test/__golden__/scope_violation.terminal.txt  M +1 −1   (changed, never mentioned)
+UNDISCLOSED     packages/core/test/__golden__/tampered.md  M +1 −1   (changed, never mentioned)
+UNDISCLOSED     packages/core/test/__golden__/tampered.noexec.json  M +1 −1   (changed, never mentioned)
+UNDISCLOSED     packages/core/test/__golden__/tampered.terminal.txt  M +1 −1   (changed, never mentioned)
+UNDISCLOSED     packages/core/test/__golden__/tdd_trap.noexec.json  M +1 −1   (changed, never mentioned)
+UNDISCLOSED     packages/core/test/__golden__/toothless_gamed.noexec.json  M +1 −1   (changed, never mentioned)
+UNDISCLOSED     packages/core/test/__golden__/toothless.noexec.json  M +1 −1   (changed, never mentioned)
+UNDISCLOSED     packages/core/test/__golden__/untracked.noexec.json  M +1 −1   (changed, never mentioned)
+UNDISCLOSED     packages/core/test/bitecheck.stub.test.ts  A +103 −0   (changed, never mentioned)
+                …and 48 more (see receipt JSON)
+RESULT          MIXED · 4 verified · 0 contradicted · 3 unverifiable · 251.7s · gpt-oss-120b@groq
+

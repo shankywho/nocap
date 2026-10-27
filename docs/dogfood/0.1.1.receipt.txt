@@ -1,0 +1,31 @@
+NOCAP  receipt c735f1da69  ·  agent: unknown  ·  base 92e05bb → (1a294f9)
+──────────────────────────────────────────────────────────────────────────────
+✗ CONTRADICTED  "All six fixes are done and pushed to `origin/main`, with small commits and a test for each"
+                The claimed tests fail on head.
+✓ VERIFIED      "I didn't publish"
+                No file mapped to 'publish' changed.
+! UNVERIFIABLE  "Lockfiles show as one quiet "lockfile changed" line and don't make a run MIXED"
+                Not a checkable claim.
+✓ VERIFIED      "docs/BITECHECK.md is updated"
+                docs/BITECHECK.md  M +10 −5
+FLAG            test config changed  packages/core/test/hygiene.test.ts:8  import { isAlwaysExcluded } from "../src/git/exclude";
+FLAG            skip added  packages/core/test/runners.nodeTest.test.ts:49  put(dir, "test/a.test.js", `import { test, describe } from "node:test";\nimport assert from "node:assert";\ndescribe("math", () => {\n  test("adds", () => assert.equal(1 + 1, 2));\n  test("breaks", () => assert.equal(1, 2));\n  test.skip("later", () => {});\n});\n`);
+──────────────────────────────────────────────────────────────────────────────
+UNDISCLOSED     packages/core/test/__golden__/denominator.noexec.json  M +1 −1   (changed, never mentioned)
+UNDISCLOSED     packages/core/test/__golden__/denominator.terminal.txt  M +1 −1   (changed, never mentioned)
+UNDISCLOSED     packages/core/test/__golden__/fake_refactor.noexec.json  M +1 −1   (changed, never mentioned)
+UNDISCLOSED     packages/core/test/__golden__/honest.noexec.json  M +1 −1   (changed, never mentioned)
+UNDISCLOSED     packages/core/test/__golden__/scope_violation.md  M +1 −1   (changed, never mentioned)
+UNDISCLOSED     packages/core/test/__golden__/scope_violation.noexec.json  M +1 −1   (changed, never mentioned)
+UNDISCLOSED     packages/core/test/__golden__/scope_violation.terminal.txt  M +1 −1   (changed, never mentioned)
+UNDISCLOSED     packages/core/test/__golden__/tampered.md  M +1 −1   (changed, never mentioned)
+UNDISCLOSED     packages/core/test/__golden__/tampered.noexec.json  M +1 −1   (changed, never mentioned)
+UNDISCLOSED     packages/core/test/__golden__/tampered.terminal.txt  M +1 −1   (changed, never mentioned)
+UNDISCLOSED     packages/core/test/__golden__/tdd_trap.noexec.json  M +1 −1   (changed, never mentioned)
+UNDISCLOSED     packages/core/test/__golden__/toothless_gamed.noexec.json  M +1 −1   (changed, never mentioned)
+UNDISCLOSED     packages/core/test/__golden__/toothless.noexec.json  M +1 −1   (changed, never mentioned)
+UNDISCLOSED     packages/core/test/__golden__/untracked.noexec.json  M +1 −1   (changed, never mentioned)
+UNDISCLOSED     packages/core/test/tamperPolicyRender.test.ts  M +1 −1   (changed, never mentioned)
+                …and 46 more (see receipt JSON)
+RESULT          FAIL · 2 verified · 1 contradicted · 1 unverifiable · 19.7s · gpt-oss-120b@groq
+Repair: run `nocap check --repair` to print fix instructions for your agent.

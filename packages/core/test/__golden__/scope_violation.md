@@ -20,4 +20,4 @@ src/auth/session.ts changed although the summary says 'auth' was untouched.
 ### ! All 13 tests pass.
 Re-running the suite needs execution, which is disabled (--no-exec).
 
-_nocap 0.1.1 · run RUN_
+_nocap 0.1.2 · run RUN_

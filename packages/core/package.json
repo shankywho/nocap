@@ -1,6 +1,6 @@
 {
   "name": "@nocap/core",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "nocap engine: verify a coding agent's claims against a repo with deterministic evidence.",
   "license": "MIT",
   "type": "module",

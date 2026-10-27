@@ -17,18 +17,18 @@ describe("stub: TypeScript / JavaScript", () => {
     "",
   ].join("\n");
 
-  it("finds functions, expressions and class methods by name, not constants", () => {
-    expect(functionNames("src/m.ts", src).sort()).toEqual(["Calc.twice", "add", "div", "load", "mul", "sub"]);
+  it("finds functions, expressions and class methods by name, not constants", async () => {
+    expect([...(await functionNames("src/m.ts", src))].sort()).toEqual(["Calc.twice", "add", "div", "load", "mul", "sub"]);
   });
 
-  it("added = at head, not at base; a new file has everything added", () => {
+  it("added = at head, not at base; a new file has everything added", async () => {
     const base = "export function mul(a: number, b: number) { return a * b; }\n";
-    expect(addedFunctions("src/m.ts", base, src).sort()).toEqual(["Calc.twice", "add", "div", "load", "sub"]);
-    expect(addedFunctions("src/m.ts", null, src)).toHaveLength(6);
+    expect([...(await addedFunctions("src/m.ts", base, src))].sort()).toEqual(["Calc.twice", "add", "div", "load", "sub"]);
+    expect(await addedFunctions("src/m.ts", null, src)).toHaveLength(6);
   });
 
-  it("stubs bodies, keeps signatures and exports, leaves other code alone", () => {
-    const out = stubFunctions("src/m.ts", src, ["mul", "add", "Calc.twice"]);
+  it("stubs bodies, keeps signatures and exports, leaves other code alone", async () => {
+    const out = await stubFunctions("src/m.ts", src, ["mul", "add", "Calc.twice"]);
     expect(out).toMatch(/export function mul\(a: number, b: number\): number \{\s*return undefined;\s*\}/);
     expect(out).toContain("export const add = (a: number, b: number) => undefined;");
     expect(out).toMatch(/twice\(x: number\) \{\s*return undefined;\s*\}/);
@@ -36,13 +36,13 @@ describe("stub: TypeScript / JavaScript", () => {
     expect(out).toContain("export const PI = 3.14;");
   });
 
-  it("handles JavaScript files and survives syntax it cannot parse", () => {
-    expect(stubFunctions("lib/a.js", "export function f(x) { return x + 1 }\n", ["f"])).toMatch(/return undefined/);
-    expect(functionNames("lib/a.ts", "export function (((")).toBeDefined();
+  it("handles JavaScript files and survives syntax it cannot parse", async () => {
+    expect(await stubFunctions("lib/a.js", "export function f(x) { return x + 1 }\n", ["f"])).toMatch(/return undefined/);
+    expect(await functionNames("lib/a.ts", "export function (((")).toBeDefined();
   });
 
-  it("ignores unsupported file types", () => {
-    expect(functionNames("README.md", "# hi")).toEqual([]);
+  it("ignores unsupported file types", async () => {
+    expect(await functionNames("README.md", "# hi")).toEqual([]);
   });
 });
 
@@ -72,12 +72,12 @@ describe("stub: Python", () => {
     "",
   ].join("\n");
 
-  it("finds defs, including multi-line headers and methods", () => {
-    expect(functionNames("m.py", py).sort()).toEqual(["Calc.keep", "Calc.twice", "add", "mul"]);
+  it("finds defs, including multi-line headers and methods", async () => {
+    expect([...(await functionNames("m.py", py))].sort()).toEqual(["Calc.keep", "Calc.twice", "add", "mul"]);
   });
 
-  it("replaces the body with `return None`, keeping the header", () => {
-    const out = stubFunctions("m.py", py, ["mul", "add", "Calc.twice"]);
+  it("replaces the body with `return None`, keeping the header", async () => {
+    const out = await stubFunctions("m.py", py, ["mul", "add", "Calc.twice"]);
     expect(out).toContain("def mul(a, b):\n    return None");
     expect(out).toContain("):\n    return None");
     expect(out).toContain("    def twice(self, x):\n        return None");

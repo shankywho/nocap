@@ -115,7 +115,7 @@ export async function bitecheck(opts: BitecheckOptions): Promise<BitecheckResult
       if (headText === null) continue;
       const baseText = f.status === "A" ? null : await readAt(opts.baseSha, f.previousPath ?? f.path);
       if (f.status === "M" && baseText === null) continue;
-      const names = addedFunctions(f.path, baseText, headText);
+      const names = await addedFunctions(f.path, baseText, headText);
       if (names.length > 0) stubPlan.set(f.path, { names, base: baseText, head: headText });
     }
     const stubMode = stubPlan.size > 0;
@@ -129,7 +129,7 @@ export async function bitecheck(opts: BitecheckOptions): Promise<BitecheckResult
       if (co.exitCode !== 0) return result("environment", selected, { head: headEv });
     }
     for (const p of toDelete) await opts.fs.rm(`${wt.path}/${p}`, { force: true });
-    for (const [path, p] of stubPlan) await opts.fs.writeFile(`${wt.path}/${path}`, mutateForStub(path, p.base, p.head, p.names));
+    for (const [path, p] of stubPlan) await opts.fs.writeFile(`${wt.path}/${path}`, await mutateForStub(path, p.base, p.head, p.names));
     const revertedFiles = revertTargets;
     const deletedForRevert = toDelete;
 

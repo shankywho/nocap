@@ -23,7 +23,7 @@ await build({
   format: "esm",
   target: "node20",
   logLevel: "warning",
-  banner: { js: "import { createRequire as __cr } from 'node:module'; const require = __cr(import.meta.url);" },
+  banner: { js: "import { createRequire as __cr } from 'node:module'; import { fileURLToPath as __fu } from 'node:url'; import { dirname as __dn } from 'node:path'; const require = __cr(import.meta.url); const __filename = __fu(import.meta.url); const __dirname = __dn(__filename);" },
 });
 
 // Demo support: the fixture builder and the fixtures themselves ship in the tarball.
@@ -35,7 +35,7 @@ await build({
   format: "esm",
   target: "node20",
   logLevel: "warning",
-  banner: { js: "import { createRequire as __cr } from 'node:module'; const require = __cr(import.meta.url);" },
+  banner: { js: "import { createRequire as __cr } from 'node:module'; import { fileURLToPath as __fu } from 'node:url'; import { dirname as __dn } from 'node:path'; const require = __cr(import.meta.url); const __filename = __fu(import.meta.url); const __dirname = __dn(__filename);" },
 });
 cpSync(join(root, "fixtures/project"), join(stage, "fixtures/project"), { recursive: true });
 cpSync(join(root, "fixtures/scenarios"), join(stage, "fixtures/scenarios"), { recursive: true });
@@ -43,7 +43,7 @@ cpSync(join(root, "fixtures/scenarios"), join(stage, "fixtures/scenarios"), { re
 const src = JSON.parse(readFileSync(join(root, "apps/cli/package.json"), "utf8"));
 writeFileSync(
   join(stage, "package.json"),
-  `${JSON.stringify({ name: "@shankywho/nocap", version: src.version, description: src.description, license: src.license, type: "module", bin: { nocap: "bundle/nocap.js" }, repository: { type: "git", url: "git+https://github.com/shankar7055/NoCap.git" }, homepage: "https://github.com/shankar7055/NoCap#readme", keywords: ["ai", "agents", "coding-agent", "verification", "claude-code", "mcp", "testing"], files: ["bundle", "fixtures", "README.md"], engines: src.engines }, null, 2)}\n`,
+  `${JSON.stringify({ name: "@shankywho/nocap", version: src.version, description: src.description, license: src.license, type: "module", bin: { nocap: "bundle/nocap.js" }, repository: { type: "git", url: "git+https://github.com/shankywho/nocap.git" }, homepage: "https://github.com/shankywho/nocap#readme", keywords: ["ai", "agents", "coding-agent", "verification", "claude-code", "mcp", "testing"], files: ["bundle", "fixtures", "README.md"], engines: src.engines }, null, 2)}\n`,
 );
 cpSync(join(root, "apps/cli/README.md"), join(stage, "README.md"));
 const out = execFileSync("npm", ["pack", "--silent"], { cwd: stage, encoding: "utf8" }).trim();

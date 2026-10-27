@@ -101,11 +101,17 @@ kbd {
   text-underline-offset: 4px;
 }
 .plate {
-  font-family: var(--font-plex-mono), ui-monospace, monospace;
-  font-size: 12px;
+  font-family: var(--font-plex-sans), system-ui, sans-serif;
+  font-size: 13px;
   line-height: 1.4;
+  font-variant-caps: all-small-caps;
+  letter-spacing: 0.04em;
   color: var(--muted);
   margin-top: 8px;
+}
+.plate a {
+  font-variant-caps: normal;
+  letter-spacing: 0;
 }
 
 /* Brass double rule between sections: 1px, 3px gap, 1px, at 40% opacity. */
@@ -117,13 +123,34 @@ kbd {
   margin: 0;
 }
 
-/* Section label: "No. 1" in small caps. */
-.label {
-  font-family: var(--font-old-standard), "Old Standard TT", Georgia, serif;
+/* Small labels and stat labels are sans small caps; mono is only for code, receipts and file paths. */
+.smallcaps {
+  font-family: var(--font-plex-sans), system-ui, sans-serif;
+  font-size: 13px;
   font-variant-caps: all-small-caps;
-  letter-spacing: 0.06em;
-  color: var(--lamp);
-  font-size: 18px;
+  letter-spacing: 0.04em;
+}
+
+/* A thin brass rule between items of a plain list. */
+.listrule > * + * {
+  border-top: 1px solid rgba(167, 109, 56, 0.3);
+}
+
+/* A wide receipt scrolls sideways inside its document; the scrollbar stays visible. */
+.scrollx {
+  overflow-x: scroll;
+  scrollbar-width: thin;
+  scrollbar-color: var(--brass) var(--document);
+}
+.scrollx::-webkit-scrollbar {
+  height: 10px;
+}
+.scrollx::-webkit-scrollbar-track {
+  background: var(--document);
+  border-top: 1px solid var(--brass-line);
+}
+.scrollx::-webkit-scrollbar-thumb {
+  background: var(--brass);
 }
 
 .stat {

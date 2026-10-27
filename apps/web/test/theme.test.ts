@@ -52,6 +52,11 @@ describe("WCAG contrast of every text pair the page uses is at least 4.5:1", () 
       expect(ratio, `${fg} ${token(fg)} on ${bg} ${token(bg)} is ${ratio.toFixed(2)}:1`).toBeGreaterThanOrEqual(4.5);
     });
   }
+  it("hanging numerals (lamp at 70% opacity on the wall) keep 3:1, the large-text minimum", () => {
+    const mix = (fg: string, bg: string, a: number) => `#${[1, 3, 5].map((i) => Math.round(Number.parseInt(fg.slice(i, i + 2), 16) * a + Number.parseInt(bg.slice(i, i + 2), 16) * (1 - a)).toString(16).padStart(2, "0")).join("")}`;
+    expect(contrast(mix(token("lamp"), token("wall"), 0.7), token("wall"))).toBeGreaterThanOrEqual(3);
+    expect(contrast(mix(token("lamp"), token("desk"), 0.7), token("desk"))).toBeGreaterThanOrEqual(3);
+  });
   it("computes known ratios correctly", () => {
     expect(contrast("#000000", "#ffffff")).toBeCloseTo(21, 5);
     expect(contrast("#777777", "#ffffff")).toBeCloseTo(4.48, 1);
@@ -99,12 +104,60 @@ describe("hero image", () => {
     expect(hero).toContain("priority: true");
     expect(hero).toContain('sizes: "100vw"');
     expect(hero).toContain('objectFit: "cover"');
-    expect(hero).toContain('objectPosition: "70% 50%"');
+    // 72% 40% in the phone band, 70% 50% as the full-bleed background
+    expect(hero).toContain("object-[72%_40%]");
+    expect(hero).toContain("md:object-[70%_50%]");
+    expect(hero).toContain("h-60");
     expect(hero).toContain("/art/hero-{w}.webp");
   });
   it("has the caption, in the muted colour, bottom right", () => {
     const hero = read("src/ui/hero.tsx");
     expect(hero).toContain("After Thomas Eakins, The Chess Players (1876) · The Met, public domain · canvas extended for this page");
-    expect(hero).toContain("bottom-3 right-4");
+    expect(hero).toContain("md:bottom-3 md:right-4");
+  });
+});
+
+describe("copy and structure of the refined landing page", () => {
+  const page = read("app/page.tsx");
+  const landing = read("src/ui/landing.tsx");
+  const hero = read("src/ui/hero.tsx");
+  const all = `${page}\n${landing}\n${hero}`;
+
+  it("leads with install and checking, not the demo", () => {
+    expect(all).not.toContain("Try the demo");
+    expect(all).not.toContain("Play the repair loop");
+    expect(all).not.toContain("Nothing running yet");
+    expect(landing).toContain("Install");
+    expect(hero).toContain("See it catch a bad test");
+    expect(hero).toContain("View on GitHub");
+    expect(landing).toContain("Replay this chain");
+    expect(hero).toContain("npx @shankywho/nocap init --all");
+    expect(hero).toContain("npx @shankywho/nocap check");
+    expect(hero).toContain("Want to see it first?");
+  });
+  it("hero stats are measured numbers only, on one row", () => {
+    expect(hero).not.toMatch(/\$0\.01|per check/);
+    expect(hero).toContain("flex-nowrap");
+  });
+  it("the H1 balances its lines", () => expect(hero).toContain('textWrap: "balance"'));
+  it("hanging numerals sit in the left margin on wide screens", () => {
+    expect(page).toContain("xl:absolute xl:right-full");
+    expect(page).toContain("text-[64px]");
+    expect(page).toContain("text-lamp/70");
+    expect(page).not.toMatch(/No\. \{n\}|className="label/);
+  });
+  it("limitations and FAQ are plain lists on the wall, with details for the FAQ", () => {
+    expect(page).toContain("listrule");
+    expect(page).toContain("<details");
+    expect(page).toContain("<summary");
+    expect(page).not.toMatch(/FAQ[\s\S]{0,400}className="doc/);
+  });
+  it("receipts are never truncated in code", () => {
+    expect(page).not.toMatch(/slice\(0, 147\)|\.\.\.`: l\b/);
+    expect(page).toContain("scrollx");
+  });
+  it("the eval box shows the strategy table and links to the full results", () => {
+    expect(page).toContain("eval/results.md");
+    expect(page).toContain('split("\\n\\n")[0]');
   });
 });

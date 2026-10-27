@@ -2,7 +2,7 @@
 
 **your agent says it's done. nocap checks.**
 
-[![CI](https://github.com/shankar7055/NoCap/actions/workflows/ci.yml/badge.svg)](https://github.com/shankar7055/NoCap/actions) ![license MIT](https://img.shields.io/badge/license-MIT-blue) ![open models only](https://img.shields.io/badge/models-open%20only-3ee0cf)
+[![CI](https://github.com/shankywho/nocap/actions/workflows/ci.yml/badge.svg)](https://github.com/shankywho/nocap/actions) ![license MIT](https://img.shields.io/badge/license-MIT-blue) ![open models only](https://img.shields.io/badge/models-open%20only-3ee0cf)
 
 nocap turns a coding agent's completion message into executed proof. It splits the summary into claims, binds each claim to evidence in the diff, and proves test claims by reverting the fix and re-running the agent's own tests (Bitecheck). The result is a receipt: each claim is verified, contradicted or unverifiable, with evidence. Contradicted claims go back to the agent as a repair packet until it proves them.
 

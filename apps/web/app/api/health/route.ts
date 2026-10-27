@@ -8,7 +8,7 @@ export async function GET() {
   const mock = process.env.MOCK_EXTERNALS !== "false";
   return NextResponse.json({
     ok: true,
-    version: "0.1.0",
+    version: "0.1.1",
     mode: mock ? "mock" : "live",
     db: dbStatus(),
     llm: mock ? "offline" : `${process.env.LLM_MODEL ?? "unknown"}@groq`,

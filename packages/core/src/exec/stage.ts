@@ -20,6 +20,10 @@ export interface ExecStageOptions {
   onBitecheck?: (claimId: string, phase: "head" | "revert" | "rerun", detail: string) => void;
   /** Called when something nocap ran changed the user's dependency tree. Should never happen; it is reported loudly if it does. */
   onWarning?: (message: string) => void;
+  /** Builds and summary-requested commands write files. They run only when this is true, and only in a worktree with its own dependency directories. */
+  allowBuild?: boolean;
+  /** Test seam: force linked dependency directories. */
+  modulesMode?: "auto" | "link";
 }
 
 /** Commands a summary may ask us to run. Anything else is reported as not run. */
@@ -39,11 +43,15 @@ export function createExecStage(options: ExecStageOptions): ExecStage {
     const st = await opts.fs.stat(file).catch(() => null);
     return st ? `${st.size}:${st.mtimeMs}` : "absent";
   };
-  const head = async (repoRoot: string, headSha: string) => {
+  const head = async (repoRoot: string, headSha: string, writable = false) => {
+    if (headTree && writable && !headTree.isolated) {
+      await headTree.remove();
+      headTree = null;
+    }
     if (!headTree) {
       const file = `${repoRoot}/node_modules/.modules.yaml`;
-      guard = { file, before: await fingerprint(file) };
-      headTree = await createWorktree({ git: opts.git, fs: opts.fs, repoRoot, ref: headSha, runId: opts.runId });
+      guard ??= { file, before: await fingerprint(file) };
+      headTree = await createWorktree({ git: opts.git, fs: opts.fs, exec: opts.exec, repoRoot, ref: headSha, runId: opts.runId, modules: writable ? "writable" : (opts.modulesMode ?? "auto") });
     }
     return headTree;
   };
@@ -86,13 +94,17 @@ export function createExecStage(options: ExecStageOptions): ExecStage {
         claim, changeSet: ctx.changeSet, git: opts.git, exec: opts.exec, fs: opts.fs,
         repoRoot: ctx.repoRoot, baseSha: ctx.baseSha, headSha: ctx.headSha, runId: opts.runId,
         timeoutMs: opts.timeoutMs, env: opts.env, testCommand: opts.testCommand ?? null, testFormat: opts.testFormat ?? null,
+        allowBuild: opts.allowBuild === true, ...(opts.modulesMode ? { modulesMode: opts.modulesMode } : {}),
         onPhase: (phase, detail) => opts.onBitecheck?.(claim.id, phase, detail),
       });
     },
 
     async runCommand(command, { repoRoot, headSha }) {
       if (!isSafeCommand(command)) return null;
-      const wt = await head(repoRoot, headSha);
+      // Build and lint commands write (dist/, caches). They are opt-in, and never run through linked dependency directories.
+      if (opts.allowBuild !== true) return null;
+      const wt = await head(repoRoot, headSha, true);
+      if (!wt.isolated) return null;
       const [file, ...args] = command.trim().split(/\s+/);
       if (!file) return null;
       const started = Date.now();

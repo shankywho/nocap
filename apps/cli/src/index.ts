@@ -30,6 +30,7 @@ export function buildProgram(onExit: (code: number) => void = (code) => process.
     .option("--head <ref>", "head ref (default: working-tree snapshot if dirty, else HEAD)")
     .option("--agent <name>", "agent name for the receipt")
     .option("--no-exec", "static checks only: never run tests or commands")
+    .option("--allow-build", "allow builds in the Bitecheck worktree (off by default; needs a dependency tree that can be cloned or copied)")
     .option("--offline", "never call an LLM")
     .option("--scope <concept=glob,glob>", "map a concept to globs (repeatable)", collect, [] as string[])
     .option("--test-cmd <cmd>", "custom test command with {files} and {out}")
@@ -68,6 +69,7 @@ export function buildProgram(onExit: (code: number) => void = (code) => process.
     .option("--summary-from <source>", "where the agent's next summary comes from: stdout | file:<path>", "stdout")
     .option("--max <n>", "maximum attempts", "3")
     .option("--no-exec", "static checks only")
+    .option("--allow-build", "allow builds in the Bitecheck worktree (off by default)")
     .option("--agent <name>", "agent name for the receipts")
     .option("--base <ref>", "base ref")
     .option("--verbose", "narrate each step")
@@ -114,7 +116,8 @@ export function buildProgram(onExit: (code: number) => void = (code) => process.
     .command("bitecheck <testFiles...>")
     .description("prove specific tests bite: they must fail without the source change")
     .option("--base <ref>", "base ref")
-    .action(async (files: string[], opts: { base?: string }) => onExit(await runBitecheck(files, opts)));
+    .option("--allow-build", "allow builds in the worktree (off by default)")
+    .action(async (files: string[], opts: { base?: string; allowBuild?: boolean }) => onExit(await runBitecheck(files, opts)));
 
   program
     .command("chain [chainId]")

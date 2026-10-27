@@ -28,6 +28,12 @@ The receipt records `mode` (`revert` or `stub`) and, in stub mode, `stubbed` as 
 8. **Cleanup.** `git worktree remove --force` and `git worktree prune` in `finally`. A test asserts no worktree is left behind, including when the runner command does not exist.
 9. **Timeouts.** Each run is capped by `NOCAP_TEST_TIMEOUT_MS` (default 120000). A timeout is `environment`, never ✗.
 
+## Builds and dependency directories
+
+- The worktree gets its own copy of `node_modules` (and `.venv`): a copy-on-write clone where the filesystem supports it, otherwise a real directory of links (tests only).
+- Building workspace output is **opt-in** (`--allow-build`). A test that needs build output that is not in the checkout gives `environment` unless it is allowed, and then the build runs only in an isolated worktree, before the head run and again after the revert.
+- Every child process runs with package-manager install guards (pnpm, npm, yarn) so nothing can install into a dependency tree.
+
 ## Verdict mapping
 
 | Outcome | `tests_added` | `bug_fixed` |

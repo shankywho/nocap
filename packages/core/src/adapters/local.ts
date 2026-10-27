@@ -195,6 +195,10 @@ export interface LocalVerifyOptions {
   events?: NocapEvents | undefined;
   llm?: LlmPort | undefined;
   save?: boolean | undefined;
+  /** Allow builds and summary-requested commands in a worktree with its own dependency directories. Off by default; `NOCAP_ALLOW_BUILD=1` also enables it. */
+  allowBuild?: boolean | undefined;
+  /** Test seam: force linked dependency directories in the worktree. */
+  modulesMode?: "auto" | "link" | undefined;
 }
 
 export interface LocalVerifyResult extends VerifyOutput {
@@ -237,6 +241,8 @@ export async function verifyLocal(opts: LocalVerifyOptions, env: Env): Promise<L
         testCommand: config.testCommand, testFormat: config.testFormat,
         onBitecheck: (claimId, phase, detail) => events.emit({ type: "bitecheck", runId, claimId, phase, detail }),
         onWarning: (message) => process.stderr.write(`nocap: WARNING: ${message}\n`),
+        allowBuild: opts.allowBuild === true || envFlag(env.NOCAP_ALLOW_BUILD),
+        ...(opts.modulesMode ? { modulesMode: opts.modulesMode } : {}),
       })
     : undefined;
 
@@ -262,7 +268,7 @@ export async function verifyLocal(opts: LocalVerifyOptions, env: Env): Promise<L
 /* ─── mid-task helpers (MCP `bitecheck`, `check_scope`) ───────────────── */
 
 export async function bitecheckLocal(
-  opts: { repoPath: string; testFiles: string[]; base?: string | undefined; keywords?: string[] },
+  opts: { repoPath: string; testFiles: string[]; base?: string | undefined; keywords?: string[]; allowBuild?: boolean | undefined },
   env: Env,
 ): Promise<BitecheckResult> {
   const git = new SimpleGitPort(opts.repoPath);
@@ -278,7 +284,7 @@ export async function bitecheckLocal(
   const rc = await loadRc(opts.repoPath);
   return bitecheck({
     claim, changeSet, git, exec: new ExecaExec(), fs, repoRoot: refs.repoRoot, baseSha: refs.baseSha, headSha: refs.headSha,
-    runId, timeoutMs: Number(env.NOCAP_TEST_TIMEOUT_MS ?? 120_000), env: childEnvFrom(env),
+    runId, timeoutMs: Number(env.NOCAP_TEST_TIMEOUT_MS ?? 120_000), env: childEnvFrom(env), allowBuild: opts.allowBuild === true || envFlag(env.NOCAP_ALLOW_BUILD),
     testCommand: rc.testCommand, testFormat: rc.testFormat,
   });
 }

@@ -1,8 +1,8 @@
 import { bitecheckLocal, listReceiptFiles, loadReceipt } from "@nocap/core/adapters";
 
-export async function runBitecheck(files: string[], opts: { base?: string; cwd?: string }, env: NodeJS.ProcessEnv = process.env): Promise<number> {
+export async function runBitecheck(files: string[], opts: { base?: string; cwd?: string; allowBuild?: boolean }, env: NodeJS.ProcessEnv = process.env): Promise<number> {
   try {
-    const r = await bitecheckLocal({ repoPath: opts.cwd ?? process.cwd(), testFiles: files, base: opts.base }, env);
+    const r = await bitecheckLocal({ repoPath: opts.cwd ?? process.cwd(), testFiles: files, base: opts.base, allowBuild: opts.allowBuild }, env);
     const note: Record<string, string> = {
       bites: "the tests fail without your source change: they exercise it",
       toothless: "the tests still pass with your source change reverted: they do not exercise it",

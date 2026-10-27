@@ -216,3 +216,15 @@ Anything that could not be confirmed against the source is marked **UNVERIFIED**
 - Context: the request was to run the suite in place "with the project's own test command (`pnpm test` / `npm test`)".
 - Decision: in place we run the project's detected runner (vitest, jest, pytest, `node --test` or `--test-cmd`) directly in the repo root, with our own reporter flags, rather than `pnpm test`. `pnpm test` runs an arbitrary script whose output format we cannot parse, forwarding reporter flags through scripts is not portable, and invoking pnpm is exactly what triggered the install incident above. Runner configuration (vitest.config, jest.config, workspace config) is still the project's own.
 - Alternatives: parse `package.json` scripts and wrap `pnpm test -- --reporter=json`.
+
+## 2026-10-27 · Safety · Builds are opt-in; dependency directories are cloned, not symlinked, for runs that may write
+
+- Supersedes the mitigation in the incident entry above (the incident itself and the env guard stand).
+- Context: the guard alone was not enough. nocap's worktree shared the user's `node_modules` by symlink, so any child that wrote (a package manager, a bundler cache, a test runner cache) could modify the user's repo.
+- Decision:
+  1. **`--allow-build` (default off).** Builds in the Bitecheck worktree, and summary-requested build/lint commands (`build_pass`), run only with it (CLI flag on `check`, `loop` and `bitecheck`; `NOCAP_ALLOW_BUILD=1`). MCP tools and hooks have no argument for it. Without it, needing build output gives outcome `environment` (!), never a verdict.
+  2. **Dependency directories are cloned.** `createWorktree` clones `node_modules` (root and every workspace package) and `.venv`: `cp -c -R` on macOS/APFS, `cp -R --reflink=always` elsewhere. `modules: "writable"` (builds) falls back to a plain copy under a 1.5 GB cap, and otherwise reports `isolated: false`, which makes the build skip with `environment`. Absolute links from a clone to workspace packages are re-pointed at the worktree's copies.
+  3. **Test runs when cloning is unavailable** (for example ext4 CI) use a real `node_modules` directory whose entries are links to the user's, with manager state and caches (`.modules.yaml`, `.vite`, `.vitest-cache`, `.cache`, …) left out, so everything a runner newly writes lands in the worktree. **Residual risk, stated plainly:** a runner that writes into an existing package directory behind one of those links would still reach the user's tree. Builds are never allowed in that mode.
+  4. **Guards for npm and yarn** as well as pnpm (`exec/safeEnv.ts`).
+- Tradeoff: cloning costs nothing on APFS and reflink filesystems; on ext4 a build needs a real copy (or is skipped).
+- Verified: `safety.invariant.test.ts` (snapshot before and after a full monorepo run with a writing build and writing tests, in auto and link modes, with and without `--allow-build`). I checked it has teeth by letting `.modules.yaml` be linked: the test then fails. `monorepo.test.ts` records the npm and yarn guard variables through stand-in managers on PATH.

@@ -9,6 +9,7 @@ import { detectRunner } from "../runners/detect.js";
 import { escapeRegex, runTests } from "../runners/run.js";
 import type { TestRunResult } from "../runners/types.js";
 import { selectTests, type SelectedTest } from "./select.js";
+import { addedFunctions, isStubbable, mutateForStub } from "./stub.js";
 
 export interface BitecheckOptions {
   claim: Claim;
@@ -36,6 +37,8 @@ function result(
 ): BitecheckResult {
   return {
     outcome,
+    mode: "revert",
+    stubbed: [],
     selectedTests: selected.map((t) => ({ file: t.file, title: t.title })),
     revertedFiles: [],
     deletedForRevert: [],
@@ -103,14 +106,30 @@ export async function bitecheck(opts: BitecheckOptions): Promise<BitecheckResult
       return result(onHead.length === 0 ? "environment" : "broken_on_head", selected, { head: headEv });
     }
 
-    const revertTargets = sourceFiles.filter((f) => f.status !== "A").map((f) => f.previousPath ?? f.path);
-    const toDelete = sourceFiles.filter((f) => f.status === "A" || f.status === "R").map((f) => f.path);
-    opts.onPhase?.("revert", `reverting ${revertTargets.length + toDelete.length} source file(s)`);
+    // Functions the change added cannot be "reverted" by checking out base: deleting them fails any test with an import error.
+    // Keep their signatures, stub their bodies, and put modified pre-existing functions back to their base bodies.
+    const stubPlan = new Map<string, { names: string[]; base: string | null; head: string }>();
+    for (const f of sourceFiles) {
+      if ((f.status !== "A" && f.status !== "M") || !isStubbable(f.path)) continue;
+      const headText = await readAt(opts.headSha, f.path);
+      if (headText === null) continue;
+      const baseText = f.status === "A" ? null : await readAt(opts.baseSha, f.previousPath ?? f.path);
+      if (f.status === "M" && baseText === null) continue;
+      const names = addedFunctions(f.path, baseText, headText);
+      if (names.length > 0) stubPlan.set(f.path, { names, base: baseText, head: headText });
+    }
+    const stubMode = stubPlan.size > 0;
+    const rest = sourceFiles.filter((f) => !stubPlan.has(f.path));
+    const revertTargets = rest.filter((f) => f.status !== "A").map((f) => f.previousPath ?? f.path);
+    const toDelete = rest.filter((f) => f.status === "A" || f.status === "R").map((f) => f.path);
+    const stubbed = [...stubPlan].flatMap(([path, p]) => p.names.map((n) => `${path} › ${n}`));
+    opts.onPhase?.("revert", stubMode ? `stubbing ${stubbed.length} added function(s) in ${stubPlan.size} file(s)` : `reverting ${revertTargets.length + toDelete.length} source file(s)`);
     if (revertTargets.length > 0) {
       const co = await opts.git.raw(["checkout", opts.baseSha, "--", ...revertTargets], { cwd: wt.path });
       if (co.exitCode !== 0) return result("environment", selected, { head: headEv });
     }
     for (const p of toDelete) await opts.fs.rm(`${wt.path}/${p}`, { force: true });
+    for (const [path, p] of stubPlan) await opts.fs.writeFile(`${wt.path}/${path}`, mutateForStub(path, p.base, p.head, p.names));
     const revertedFiles = revertTargets;
     const deletedForRevert = toDelete;
 
@@ -119,8 +138,9 @@ export async function bitecheck(opts: BitecheckOptions): Promise<BitecheckResult
     if (re.environmentError) return result("environment", selected, { head: headEv, revertedFiles, deletedForRevert });
     const reEv = evidence("reverted", re, selected);
     const onRe = pick(re, selected);
-    const fields = { head: headEv, reverted: reEv, revertedFiles, deletedForRevert };
+    const fields = { head: headEv, reverted: reEv, revertedFiles, deletedForRevert, ...(stubMode ? { mode: "stub" as const, stubbed } : {}) };
 
+    if (onRe.length === 0 && stubMode) return result("environment", selected, fields);
     if (onRe.length === 0) {
       const fileErrors = re.suiteErrors.filter((e) => files.includes(e.file));
       if (fileErrors.length > 0 && fileErrors.every((e) => IMPORT_ERROR.test(e.message))) return result("import_only", selected, fields);
@@ -128,7 +148,7 @@ export async function bitecheck(opts: BitecheckOptions): Promise<BitecheckResult
     }
     const failed = onRe.filter((t) => t.status === "failed");
     if (failed.length === 0) return result("toothless", selected, fields);
-    if (failed.length === onRe.length && failed.every((t) => IMPORT_ERROR.test(t.message ?? ""))) {
+    if (!stubMode && failed.length === onRe.length && failed.every((t) => IMPORT_ERROR.test(t.message ?? ""))) {
       return result("import_only", selected, fields);
     }
     return result("bites", selected, fields);

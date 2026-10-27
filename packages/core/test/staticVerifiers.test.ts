@@ -108,7 +108,7 @@ describe("exec-backed claims", () => {
   });
   it("tests_added maps Bitecheck outcomes; never verified under --no-exec", async () => {
     const bc = (outcome: "bites" | "toothless" | "import_only" | "broken_on_head" | "environment" | "no_matching_tests") =>
-      ({ outcome, selectedTests: [], revertedFiles: [], deletedForRevert: [], head: null, reverted: null });
+      ({ outcome, mode: "revert" as const, stubbed: [] as string[], selectedTests: [], revertedFiles: [], deletedForRevert: [], head: null, reverted: null });
     const run = (o: Parameters<typeof bc>[0], files: ChangedFile[] = []) =>
       status(claim({ type: "tests_added" }), ctx(files, [], { bitechecks: new Map([["c1", bc(o)]]) }));
     expect(await run("bites")).toBe("verified");

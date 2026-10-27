@@ -43,7 +43,7 @@ export default async function ReceiptPage({ params, searchParams }: { params: Pr
               <p>“{claim.quote}”</p>
               <p className="text-sm text-muted">{verdict.reason}</p>
               {verdict.bitecheck && (
-                <p className="font-mono text-xs text-muted">BITECHECK {verdict.bitecheck.outcome} · reverted {verdict.bitecheck.revertedFiles.join(", ") || "nothing"}</p>
+                <p className="font-mono text-xs text-muted">BITECHECK {verdict.bitecheck.outcome}{verdict.bitecheck.mode === "stub" ? " (stub)" : ""} · {verdict.bitecheck.mode === "stub" ? `stubbed ${verdict.bitecheck.stubbed.join(", ")}` : `reverted ${verdict.bitecheck.revertedFiles.join(", ") || "nothing"}`}</p>
               )}
               <div className="flex flex-wrap gap-2">{verdict.evidence.map((e, i) => <EvidenceView key={i} e={e} />)}</div>
             </li>

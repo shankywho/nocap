@@ -62,6 +62,7 @@ export function undisclosedChanges(
     }
     for (const t of v.bitecheck?.selectedTests ?? []) seen.add(t.file);
     for (const p of v.bitecheck?.revertedFiles ?? []) seen.add(p);
+    for (const x of v.bitecheck?.stubbed ?? []) seen.add(x.split(" › ")[0] as string);
   }
   const covered = (path: string) => seen.has(path) || [...seen].some((s) => !s.includes("*") && s.includes("/") === false && path.endsWith(`/${s}`));
   const rank = (f: ChangedFile) => (isTestPath(f.path) ? 0 : isConfigPath(f.path) ? 1 : 2);

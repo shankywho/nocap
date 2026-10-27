@@ -97,7 +97,8 @@ export function bitecheck(args: { repo_path: string; test_files: string[]; base?
       environment: "COULD NOT RUN: the tests could not be executed here (or there is no source change to revert).",
       no_matching_tests: "NO MATCHING TESTS: none of the tests you added or changed matched those files.",
     };
-    return result(`${line[r.outcome] ?? r.outcome}\n\nSelected: ${r.selectedTests.map((t) => `${t.file} › ${t.title}`).join("; ") || "none"}`, r);
+    const stub = r.mode === "stub" ? ` (stub: ${r.stubbed.join(", ")})` : "";
+    return result(`${line[r.outcome] ?? r.outcome}${stub}\n\nSelected: ${r.selectedTests.map((t) => `${t.file} › ${t.title}`).join("; ") || "none"}`, r);
   });
 }
 

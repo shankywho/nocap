@@ -1,6 +1,6 @@
 import { writeFile } from "node:fs/promises";
 import { NocapEvents, renderJson, renderMarkdown, renderTerminal, repairMarkdown, type LlmPort, type Receipt, type RepairPacket } from "@nocap/core";
-import { verifyLocal } from "@nocap/core/adapters";
+import { llmStatus, verifyLocal } from "@nocap/core/adapters";
 import { publishReceipt } from "../io/publish.js";
 import { createPrinter } from "../io/printer.js";
 import { readSummary, UsageError } from "../io/readSummary.js";
@@ -49,6 +49,12 @@ export async function runCheck(opts: CheckOptions, env: NodeJS.ProcessEnv = proc
     const events = new NocapEvents();
     const printer = createPrinter({ verbose: opts.verbose === true, quiet: opts.json === true && !opts.verbose });
     events.on((e) => printer.onEvent(e));
+
+    // Never silent: say so when extraction falls back to the regex extractor for lack of a key.
+    if (llmStatus(env, opts.offline === true).mode === "offline-nokey") {
+      const dim = process.stderr.isTTY === true && env.NO_COLOR === undefined;
+      process.stderr.write(`${dim ? "\x1b[2m" : ""}offline extraction (regex) — add a free Groq key for full claim coverage: nocap config set llm-key …${dim ? "\x1b[0m" : ""}\n`);
+    }
 
     let output;
     try {

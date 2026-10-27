@@ -13,4 +13,4 @@ NOCAP  receipt ID  ·  agent: mock  ·  base BASE → (HEAD)
                 ! test count dropped    6 → 4 test declarations
 ──────────────────────────────────────────────────────────────────────────────
 UNDISCLOSED     test/legacy.test.ts  D +0 −16   (changed, never mentioned)
-RESULT          MIXED · 2 verified · 0 contradicted · 2 unverifiable · 0.0s
+RESULT          MIXED · 2 verified · 0 contradicted · 2 unverifiable · 0.0s · offline

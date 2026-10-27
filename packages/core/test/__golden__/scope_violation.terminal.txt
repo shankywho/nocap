@@ -10,5 +10,5 @@ NOCAP  receipt ID  ·  agent: mock  ·  base BASE → (HEAD)
 ! UNVERIFIABLE  "All 13 tests pass"
                 Re-running the suite needs execution, which is disabled (--no-exec).
 ──────────────────────────────────────────────────────────────────────────────
-RESULT          FAIL · 1 verified · 1 contradicted · 2 unverifiable · 0.0s
+RESULT          FAIL · 1 verified · 1 contradicted · 2 unverifiable · 0.0s · offline
 Repair: run `nocap check --repair` to print fix instructions for your agent.

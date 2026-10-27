@@ -20,3 +20,15 @@ describe("render goldens (NO_COLOR)", () => {
   });
   it.each(["scope_violation", "tampered"])("markdown %s", (n) => golden(`${n}.md`, renderMarkdown(load(n))));
 });
+
+describe("RESULT line model label", () => {
+  const base = load("denominator");
+  it("says offline for the regex extractor and names the model otherwise", () => {
+    const offline = renderTerminal({ ...base, model: { provider: "offline", id: "regex", degraded: false } }, { color: false });
+    expect(offline).toContain("· offline");
+    const live = renderTerminal({ ...base, model: { provider: "groq", id: "openai/gpt-oss-120b", degraded: false } }, { color: false });
+    expect(live).toContain("· gpt-oss-120b@groq");
+    const degraded = renderTerminal({ ...base, model: { provider: "groq", id: "openai/gpt-oss-120b", degraded: true } }, { color: false });
+    expect(degraded).toContain("· offline");
+  });
+});

@@ -26,6 +26,7 @@ import { ConsoleLogger, SystemClock } from "./clock.js";
 import { ExecaExec } from "./exec.execa.js";
 import { NodeFs } from "./fs.node.js";
 import { SimpleGitPort } from "./git.simple.js";
+import { readConfig, resolveLlmKey } from "./config.js";
 import { MockLlm } from "./llm.mock.js";
 import { OpenAiCompatLlm } from "./llm.openaiCompat.js";
 
@@ -138,12 +139,20 @@ export async function latestReceiptFile(repoRoot: string): Promise<string | null
 
 /* ─── wiring ──────────────────────────────────────────────────────────── */
 
+/** What extraction will use, so shells can say so instead of falling back silently. */
+export function llmStatus(env: Env, offline: boolean): { mode: "llm" | "offline-flag" | "offline-nokey"; source: string | null } {
+  if (offline || envFlag(env.MOCK_EXTERNALS) || envFlag(env.NOCAP_OFFLINE)) return { mode: "offline-flag", source: null };
+  const found = resolveLlmKey(env);
+  return found ? { mode: "llm", source: found.source } : { mode: "offline-nokey", source: null };
+}
+
 export function makeLlm(env: Env, offline: boolean): LlmPort {
-  const key = env.LLM_API_KEY ?? "";
+  const key = resolveLlmKey(env)?.key ?? "";
   if (offline || envFlag(env.MOCK_EXTERNALS) || key.length === 0) return new MockLlm();
   const fallbackKey = env.LLM_FALLBACK_API_KEY ?? "";
+  const stored = readConfig(env);
   return new OpenAiCompatLlm({
-    primary: { baseUrl: env.LLM_BASE_URL ?? "https://api.groq.com/openai/v1", apiKey: key, model: env.LLM_MODEL ?? "openai/gpt-oss-120b" },
+    primary: { baseUrl: env.LLM_BASE_URL ?? stored.llmBaseUrl ?? "https://api.groq.com/openai/v1", apiKey: key, model: env.LLM_MODEL ?? stored.llmModel ?? "openai/gpt-oss-120b" },
     fallback: fallbackKey
       ? { baseUrl: env.LLM_FALLBACK_BASE_URL ?? "https://openrouter.ai/api/v1", apiKey: fallbackKey, model: env.LLM_FALLBACK_MODEL ?? "openai/gpt-oss-120b" }
       : undefined,

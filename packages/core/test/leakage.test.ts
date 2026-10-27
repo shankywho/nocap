@@ -90,7 +90,7 @@ describe("runtime leakage", () => {
 
   it("childEnvFrom passes only the allow-list to test runners", () => {
     const out = childEnvFrom({ ...SENTINELS, PATH: "/bin", HOME: "/h", CI: "0" });
-    expect(Object.keys(out).sort()).toEqual(["CI", "HOME", "PATH"]);
+    expect(Object.keys(out).sort()).toEqual(["CI", "HOME", "PATH", "pnpm_config_verify_deps_before_run"]);
     expect(JSON.stringify(out)).not.toContain("SENTINEL");
   });
 

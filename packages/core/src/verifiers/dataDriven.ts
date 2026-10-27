@@ -19,7 +19,8 @@ export function suiteEvidence(ctx: VerifyContext): Evidence[] {
       failed: s.failed,
       skipped: s.skipped,
       durationMs: s.durationMs,
-      tests: s.tests.slice(0, 50).map((t) => ({ file: t.file, title: t.title, status: t.status })),
+      // failures first, so they are always in the evidence even when the suite is large
+      tests: [...s.tests.filter((t) => t.status === "failed"), ...s.tests.filter((t) => t.status !== "failed")].slice(0, 50).map((t) => ({ file: t.file, title: t.title, status: t.status })),
     },
   ];
 }

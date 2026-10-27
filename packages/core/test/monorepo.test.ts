@@ -172,3 +172,63 @@ describe("one source of truth for totals", () => {
     expect(tally([], [{ file: "a", message: "m" }])).toEqual({ total: 1, passed: 0, failed: 1, skipped: 0 });
   });
 });
+
+describe("nocap never installs dependencies", () => {
+  /** A stand-in `pnpm` that records how it was called and behaves like pnpm 11: it "installs" unless the guard is off. */
+  function fakePnpm(logDir: string): string {
+    const bin = join(logDir, "bin");
+    put(bin, "pnpm", `#!/bin/sh\necho "args=$* guard=$pnpm_config_verify_deps_before_run cwd=$PWD" >> "${join(logDir, "pnpm.log")}"\nif [ "$pnpm_config_verify_deps_before_run" != "false" ]; then echo installed >> "${join(logDir, "INSTALL-RAN")}"; fi\nexec node packages/a/build.mjs\n`);
+    execFileSync("chmod", ["+x", join(bin, "pnpm")]);
+    return bin;
+  }
+
+  it("Bitecheck's workspace build runs `pnpm -r build` with the dependency check switched off", async () => {
+    const dir = workspace("ws-pnpm", true);
+    put(dir, "pnpm-workspace.yaml", 'packages:\n  - "packages/*"\n');
+    git(dir, "add", "-A");
+    git(dir, "commit", "-q", "-m", "pnpm workspace");
+    const logs = join(tmp, "pnpm-logs");
+    const bin = fakePnpm(logs);
+    put(dir, "packages/a/src/index.js", "export const one = () => 10;\n");
+    execFileSync("node", ["packages/a/build.mjs"], { cwd: dir });
+    put(dir, "packages/b/test/b.test.js", `import { expect, it } from "vitest";\nimport { two } from "../src/b.js";\nit("two follows one", () => expect(two()).toBe(11));\n`);
+    const { receipt } = await verifyLocal({ repoPath: dir, summary: "Added tests for two in packages/b/test/b.test.js.", exec: true, offline: true, save: false }, { ...ENV, PATH: `${bin}:${ENV.PATH}`, NOCAP_OFFLINE: "1" });
+    expect(claim(receipt, "tests_added")?.bitecheck?.outcome).toBe("bites");
+    const log = (await import("node:fs")).readFileSync(join(logs, "pnpm.log"), "utf8");
+    expect(log).toContain("args=-r build");
+    expect(log.split("\n").filter(Boolean).every((l) => l.includes("guard=false"))).toBe(true);
+    expect((await import("node:fs")).existsSync(join(logs, "INSTALL-RAN"))).toBe(false);
+  }, 240_000);
+
+  it("every child environment carries the guard, including user test commands", async () => {
+    const { childEnvFrom } = await import("../src/adapters/local");
+    const { safeEnv, NO_INSTALL_ENV } = await import("../src/exec/safeEnv");
+    expect(childEnvFrom({ PATH: "/bin", HOME: "/h", pnpm_config_verify_deps_before_run: "install" }).pnpm_config_verify_deps_before_run).toBe("false");
+    expect(safeEnv({ PATH: "/bin", ...{ pnpm_config_verify_deps_before_run: "install" } })).toMatchObject(NO_INSTALL_ENV);
+  });
+
+  it("warns loudly if the user's node_modules state file changes during a run", async () => {
+    const { createExecStage } = await import("../src/exec/stage");
+    const { SimpleGitPort } = await import("../src/adapters/git.simple");
+    const dir = workspace("ws-guard", false);
+    put(dir, "node_modules-state-probe", "x"); // keep the repo non-empty
+    const warnings: string[] = [];
+    const real = new NodeFs();
+    const state = join(dir, "node_modules", ".modules.yaml");
+    // the fixture's node_modules is a symlink to the real one; probe through a private directory instead
+    const priv = await mkdtemp(join(tmp, "priv-"));
+    put(priv, "node_modules/.modules.yaml", "a");
+    const git2 = new SimpleGitPort(priv);
+    execFileSync("git", ["init", "-q", "-b", "main"], { cwd: priv });
+    put(priv, "x.txt", "1");
+    git(priv, "add", "x.txt");
+    git(priv, "commit", "-q", "-m", "c");
+    const stage = createExecStage({ git: git2, exec: new ExecaExec(), fs: real, runId: "guard", timeoutMs: 30_000, env: ENV, onWarning: (m) => warnings.push(m) });
+    await stage.runCommand("npm test", { repoRoot: priv, headSha: git(priv, "rev-parse", "HEAD") }); // creates the worktree
+    writeFileSync(join(priv, "node_modules", ".modules.yaml"), "changed by something else");
+    await stage.dispose?.();
+    expect(warnings).toHaveLength(1);
+    expect(warnings[0]).toContain(".modules.yaml changed");
+    expect(state).toContain("node_modules");
+  }, 60_000);
+});

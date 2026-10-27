@@ -7,6 +7,7 @@ import { randomBytes } from "node:crypto";
 import { appendFile, mkdir, readFile, readdir, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { bitecheck } from "../bitecheck/run.js";
+import { NO_INSTALL_ENV } from "../exec/safeEnv.js";
 import { createExecStage } from "../exec/stage.js";
 import { NocapEvents } from "../events.js";
 import { mapScope } from "../extract/scopeMapper.js";
@@ -169,7 +170,7 @@ export function childEnvFrom(env: Env): Record<string, string> {
     if (value !== undefined) out[key] = value;
   }
   out.CI = "1";
-  return out;
+  return { ...out, ...NO_INSTALL_ENV };
 }
 
 export interface LocalVerifyOptions {
@@ -235,6 +236,7 @@ export async function verifyLocal(opts: LocalVerifyOptions, env: Env): Promise<L
         git, exec, fs, runId, timeoutMs, env: childEnvFrom(env),
         testCommand: config.testCommand, testFormat: config.testFormat,
         onBitecheck: (claimId, phase, detail) => events.emit({ type: "bitecheck", runId, claimId, phase, detail }),
+        onWarning: (message) => process.stderr.write(`nocap: WARNING: ${message}\n`),
       })
     : undefined;
 

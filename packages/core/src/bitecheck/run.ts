@@ -4,6 +4,7 @@ import type { Evidence } from "../schema/evidence.js";
 import type { BitecheckResult } from "../schema/verdict.js";
 import type { ChangeSet } from "../git/types.js";
 import { isConfigPath, isDocsPath, isLockPath, isTestPath } from "../git/classify.js";
+import { safeEnv } from "../exec/safeEnv.js";
 import { createWorktree } from "../git/worktree.js";
 import { detectBuildCommand, listWorkspacePackages, packagesMissingBuild } from "../git/workspace.js";
 import { detectRunner } from "../runners/detect.js";
@@ -68,7 +69,8 @@ function pick(run: TestRunResult, selected: SelectedTest[]) {
   return run.tests.filter((t) => selected.some((s) => s.file === t.file && (t.fullName === s.fullName || t.title === s.title)));
 }
 
-export async function bitecheck(opts: BitecheckOptions): Promise<BitecheckResult> {
+export async function bitecheck(options: BitecheckOptions): Promise<BitecheckResult> {
+  const opts: BitecheckOptions = { ...options, env: safeEnv(options.env) };
   const { changeSet } = opts;
   const readAt = async (sha: string, path: string) => {
     const r = await opts.git.raw(["show", `${sha}:${path}`], { cwd: opts.repoRoot });

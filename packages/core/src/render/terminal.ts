@@ -1,3 +1,4 @@
+import { undisclosedView } from "./undisclosed.js";
 import type { Evidence } from "../schema/evidence.js";
 import type { Receipt } from "../schema/receipt.js";
 import type { Verdict } from "../schema/verdict.js";
@@ -61,9 +62,12 @@ export function renderTerminal(receipt: Receipt, opts: TerminalOptions = {}): st
     out.push(paint(`${"FLAG".padEnd(15)} ${f.rule.replace(/_/g, " ")}  ${f.path}${f.line ? `:${f.line}` : ""}  ${f.detail}`, "yellow"));
   }
   out.push(rule);
-  for (const e of receipt.undisclosed) {
-    if (e.kind === "file") out.push(`${"UNDISCLOSED".padEnd(15)} ${e.path}  ${e.status} +${e.additions} −${e.deletions}   (changed, never mentioned)`);
+  const undisclosed = undisclosedView(receipt.undisclosed);
+  for (const e of undisclosed.files) {
+    out.push(`${"UNDISCLOSED".padEnd(15)} ${e.path}  ${e.status} +${e.additions} −${e.deletions}   (changed, never mentioned)`);
   }
+  if (undisclosed.more > 0) out.push(paint(`${" ".repeat(16)}…and ${undisclosed.more} more (see receipt JSON)`, "dim"));
+  if (undisclosed.lockfiles.length > 0) out.push(paint(`${"".padEnd(15)} lockfile changed (${undisclosed.lockfiles.join(", ")})`, "dim"));
   const t = receipt.totals;
   const live = receipt.model && !receipt.model.degraded && receipt.model.provider !== "offline";
   const model = live && receipt.model ? ` · ${receipt.model.id.split("/").pop()}@${receipt.model.provider}` : " · offline";

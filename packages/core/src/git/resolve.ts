@@ -1,3 +1,4 @@
+import { excludePathspecs } from "./exclude.js";
 import { join } from "node:path";
 import type { ClockPort, FsPort, GitPort } from "../ports.js";
 
@@ -74,7 +75,7 @@ export async function createSnapshot(opts: {
   try {
     const readTree = await git(["read-tree", "HEAD"]);
     if (readTree.exitCode !== 0) throw new Error(`git read-tree failed: ${readTree.stderr}`);
-    const add = await git(["add", "-A"]);
+    const add = await git(["add", "-A", "--", ...excludePathspecs()]);
     if (add.exitCode !== 0) throw new Error(`git add -A failed: ${add.stderr}`);
     const tree = await git(["write-tree"]);
     if (tree.exitCode !== 0) throw new Error(`git write-tree failed: ${tree.stderr}`);

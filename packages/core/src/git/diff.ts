@@ -1,3 +1,4 @@
+import { excludePathspecs, isAlwaysExcluded } from "./exclude.js";
 import gitdiffParser, { type Change, type File as ParsedFile } from "gitdiff-parser";
 
 /** gitdiff-parser ships CommonJS with an ESM-shaped .d.ts; narrow it once here. */
@@ -125,14 +126,14 @@ export async function readChangeSet(opts: DiffOptions): Promise<ChangeSet> {
   const { git, repoPath, baseSha, headSha } = opts;
 
   const nameStatusResult = await git.raw(
-    ["diff", "--name-status", "-M", "-z", baseSha, headSha, "--"],
+    ["diff", "--name-status", "-M", "-z", baseSha, headSha, "--", ...excludePathspecs()],
     { cwd: repoPath },
   );
   if (nameStatusResult.exitCode !== 0) {
     throw new Error(`git diff --name-status failed: ${nameStatusResult.stderr}`);
   }
 
-  const numstatResult = await git.raw(["diff", "--numstat", "-M", "-z", baseSha, headSha, "--"], {
+  const numstatResult = await git.raw(["diff", "--numstat", "-M", "-z", baseSha, headSha, "--", ...excludePathspecs()], {
     cwd: repoPath,
   });
   if (numstatResult.exitCode !== 0) {
@@ -140,7 +141,7 @@ export async function readChangeSet(opts: DiffOptions): Promise<ChangeSet> {
   }
 
   const patchResult = await git.raw(
-    ["diff", "-U0", "-M", "--no-color", "--no-ext-diff", baseSha, headSha, "--"],
+    ["diff", "-U0", "-M", "--no-color", "--no-ext-diff", baseSha, headSha, "--", ...excludePathspecs()],
     { cwd: repoPath },
   );
   if (patchResult.exitCode !== 0) {
@@ -162,7 +163,8 @@ export async function readChangeSet(opts: DiffOptions): Promise<ChangeSet> {
 
   files.sort((a, b) => a.path.localeCompare(b.path));
   const hunks = toHunks(parseUnifiedDiff(patchResult.stdout));
-  return { baseSha, headSha, files, hunks };
+  // The pathspecs already exclude these; filtering again keeps the guarantee even if a git build ignores the magic.
+  return { baseSha, headSha, files: files.filter((f) => !isAlwaysExcluded(f.path)), hunks: hunks.filter((h) => !isAlwaysExcluded(h.path)) };
 }
 
 export interface PatchedFile {
@@ -178,6 +180,7 @@ export interface PatchedFile {
 export function changeSetFromPatches(baseSha: string, headSha: string, input: PatchedFile[]): ChangeSet {
   const statusOf = (s: PatchedFile["status"]): ChangeStatus => (s === "added" ? "A" : s === "removed" ? "D" : s === "renamed" ? "R" : "M");
   const files: ChangedFile[] = input
+    .filter((f) => !isAlwaysExcluded(f.filename))
     .map((f) => ({
       path: f.filename,
       status: statusOf(f.status),
@@ -188,7 +191,7 @@ export function changeSetFromPatches(baseSha: string, headSha: string, input: Pa
     }))
     .sort((a, b) => a.path.localeCompare(b.path));
   const diff = input
-    .filter((f) => f.patch)
+    .filter((f) => f.patch && !isAlwaysExcluded(f.filename))
     .map((f) => `diff --git a/${f.previousFilename ?? f.filename} b/${f.filename}\n--- a/${f.previousFilename ?? f.filename}\n+++ b/${f.filename}\n${f.patch}\n`)
     .join("");
   return { baseSha, headSha, files, hunks: diff ? toHunks(parseUnifiedDiff(diff)) : [] };

@@ -2,6 +2,7 @@ import { extractWithLlm } from "./extract/llmExtractor.js";
 import { mapScope } from "./extract/scopeMapper.js";
 import type { Mapping } from "./extract/keywordScope.js";
 import type { ChangeSet } from "./git/types.js";
+import { isAlwaysExcluded } from "./git/exclude.js";
 import { readChangeSet } from "./git/diff.js";
 import { resolveRefs } from "./git/resolve.js";
 import { NocapEvents } from "./events.js";
@@ -118,7 +119,7 @@ async function verifyInner(input: VerifyInput): Promise<VerifyOutput> {
     (c) => `${c.files.length} files`,
   );
   const tree = await git.raw(["ls-tree", "-r", "--name-only", "-z", refs.headSha], { cwd: refs.repoRoot });
-  const filesAtHead = tree.stdout.split("\0").filter((p) => p.length > 0);
+  const filesAtHead = tree.stdout.split("\0").filter((p) => p.length > 0 && !isAlwaysExcluded(p));
   const show = async (sha: string, path: string) => {
     const r = await git.raw(["show", `${sha}:${path}`], { cwd: refs.repoRoot });
     return r.exitCode === 0 ? r.stdout : null;

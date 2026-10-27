@@ -1,3 +1,4 @@
+import { undisclosedView } from "./undisclosed.js";
 import type { Evidence } from "../schema/evidence.js";
 import type { Receipt } from "../schema/receipt.js";
 
@@ -44,7 +45,10 @@ export function renderMarkdown(receipt: Receipt): string {
   }
   if (receipt.undisclosed.length > 0) {
     lines.push("### Undisclosed changes");
-    for (const e of receipt.undisclosed) lines.push(`- ${evidenceLine(e)}`);
+    const view = undisclosedView(receipt.undisclosed);
+    for (const e of view.files) lines.push(`- ${evidenceLine(e)}`);
+    if (view.more > 0) lines.push(`- …and ${view.more} more (see receipt JSON)`);
+    if (view.lockfiles.length > 0) lines.push(`- lockfile changed (${view.lockfiles.join(", ")})`);
     lines.push("");
   }
   lines.push(`_nocap ${receipt.tool.version} · run ${receipt.runId}_`);

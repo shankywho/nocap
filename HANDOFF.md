@@ -1,15 +1,17 @@
-# HANDOFF (after P10)
+# HANDOFF (after 0.1.1 fixes)
 
 ## Done
-- P0-P10 complete. 264 tests green + 4 Playwright tests (`pnpm e2e`), lint + typecheck clean, `pnpm -r build` ok, `pnpm eval` ok (B3 5/5, 0 false accusations, repair table, handoff yes/0).
-- P9 web (mock mode, no keys): receipts, proof chains, `/agents`, `/verify` SSE, PR mode (`static/prVerify.ts`), demo + loop demo streams, OG cards, landing, `/docs`. `pnpm examples:generate`, `pnpm docs:cli`.
-- P10: README (§15.1 order), docs/{ARCHITECTURE,BITECHECK,PRIOR_ART,DEMO_SCRIPT,LAUNCH,BUILD_LOG}.md, CHANGELOG. `pnpm pack:cli` builds a self-contained tarball; `npx nocap demo toothless` verified from an installed tarball. `pnpm build-log` regenerates BUILD_LOG.
-- Fixed: fixtures selfcheck test now uses a private cache dir (it raced other tests on `.cache/fixtures`).
-- Tagged v0.1.0 (local only; not pushed).
+- Six real-world fixes from running the published 0.1.0 package, one commit each, all pushed to origin/main:
+  1. `nocap config set|get llm-key` (file mode 600, key never printed), key order NOCAP_LLM_API_KEY > GROQ_API_KEY > LLM_API_KEY > config file, never-silent offline banner, `· offline` / `· model@provider` in RESULT, regex extractor emits symbol_added + file_modified.
+  2. Snapshots and ChangeSets always exclude node_modules, .venv, venv, dist, build, .next, .turbo, coverage, .nocap, .cache, *.log (`git/exclude.ts`); UNDISCLOSED capped at 15 + "…and N more", lockfiles one quiet line.
+  3. Bitecheck stub mode (`bitecheck/stub.ts`, ts-morph loaded lazily): added functions are stubbed to `return undefined` / `return None`, modified existing functions go back to base bodies; receipts carry `mode` and `stubbed`. docs/BITECHECK.md updated.
+  4. `runFixtureGit` in scripts/build-fixtures.ts: git only strictly inside the cache, GIT_CEILING_DIRECTORIES set, so it can never commit to the main repo. Test: `fixtures.git-isolation.test.ts`.
+  5. `node --test` runner (junit reporter, one process per file). Flags verified on Node v24.11.0 only; see DECISIONS.md.
+  6. Version 0.1.1, metadata -> github.com/shankywho/nocap, CHANGELOG, goldens regenerated.
+- 301 tests, lint and typecheck clean. Tarball: `.cache/pack-cli/shankywho-nocap-0.1.1.tgz` (2.7 MB: ts-morph/TypeScript are bundled). Verified with `npx --yes ./pkg.tgz check` on fresh repos: offline banner, stub toothless (✗) and stub bites (✓).
 
-## Human TODO (marked `TODO(human)` in README)
-- Record `docs/media/hero.gif`; deployed URL; demo video link; dogfooding paragraph; edit the thought-process draft.
-- Verify prior-art descriptions in docs/PRIOR_ART.md against each project; per-agent `init --all` config shapes are unverified (DECISIONS.md).
-- Added after v0.1.0: leakage tests (`packages/core/test/leakage.test.ts`, `apps/web/test/leakage.test.ts`), `hook codex|gemini`, GitHub Action (`action/`, `pnpm build:action`), Playwright (`e2e/`), PrismaStore (fake-client tested only; no real DB run).
-- Not built: hosted Bitecheck (P12, needs Vercel Sandbox credentials). Codex/Gemini hook payloads and `action.yml` `node24` unverified. Lighthouse not measured. Landing footer lacks the "built for OpenFire by @handle" line.
-- Push, CI run, deploy, publish the npm package.
+## Notes
+- Not published. Publish: `cd .cache/pack-cli && npm publish --access public`.
+- In this sandbox pnpm refuses to run scripts (store mismatch). Use `pnpm --config.verify-deps-before-run=false ...` or `node_modules/.bin/vitest|eslint|tsc`.
+- `npx <absolute .tgz>` runs the path as a command; use `npx ./file.tgz` from the cwd or `npx --package=<tgz> nocap`.
+- Python stubbing is unit-tested only (no pytest integration). Earliest Node with the junit reporter is unverified.

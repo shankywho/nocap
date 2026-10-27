@@ -66,13 +66,13 @@ export function SeeItButton({ children }: { children: React.ReactNode }) {
   );
 }
 
-/* A short terminal block with a copy button. */
+/* A short terminal block. The copy button is a tab in the top-right corner; the text keeps clear of it. */
 export function CodeBlock({ lines, copy }: { lines: { cmd: string; note?: string }[]; copy?: string }) {
   const [done, setDone] = useState(false);
   const text = copy ?? lines.map((l) => l.cmd).join("\n");
   return (
-    <div className="doc flex items-start justify-between gap-4 py-3" style={{ padding: "12px 16px" }}>
-      <pre className="m-0 overflow-x-auto font-mono text-[14px] leading-7">
+    <div className="doc relative" style={{ padding: "12px 16px" }}>
+      <pre className="m-0 overflow-x-auto pr-16 font-mono text-[14px] leading-7">
         {lines.map((l) => (
           <span key={l.cmd} className="block whitespace-pre-wrap break-words md:whitespace-pre">
             <span className="text-ink-muted">$ </span>
@@ -88,7 +88,7 @@ export function CodeBlock({ lines, copy }: { lines: { cmd: string; note?: string
             setTimeout(() => setDone(false), 1500);
           });
         }}
-        className="smallcaps shrink-0 border-l border-brass pl-3 text-[14px] underline underline-offset-4"
+        className="smallcaps absolute right-0 top-0 border-b border-l border-brass px-3 py-2 text-ink underline underline-offset-4"
         aria-label="Copy the commands"
       >
         {done ? "copied" : "copy"}
@@ -119,7 +119,9 @@ const TONE = { verified: "text-verified", contradicted: "text-contradicted", unv
 
 export function Galley({ data, auto = true }: { data: GalleyData; auto?: boolean }) {
   const n = data.claims.length;
-  const [step, setStep] = useState(0);
+  // The server-rendered page shows every verdict already marked (it must read fully without JavaScript);
+  // once JS runs, the markup replays claim by claim unless the user prefers reduced motion.
+  const [step, setStep] = useState(n + 1);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const play = useCallback(() => {

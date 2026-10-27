@@ -126,7 +126,7 @@ kbd {
 /* Small labels and stat labels are sans small caps; mono is only for code, receipts and file paths. */
 .smallcaps {
   font-family: var(--font-plex-sans), system-ui, sans-serif;
-  font-size: 13px;
+  font-size: 12px;
   font-variant-caps: all-small-caps;
   letter-spacing: 0.04em;
 }

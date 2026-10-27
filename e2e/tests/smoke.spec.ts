@@ -121,3 +121,58 @@ test("unknown receipt is a 404 page, not a crash", async ({ page }) => {
   const res = await page.goto("/r/does-not-exist");
   expect(res?.status()).toBe(404);
 });
+
+test.describe("JavaScript disabled", () => {
+  test.use({ javaScriptEnabled: false });
+  const titles = ["How it checks a claim", "Bitecheck: revert the fix, rerun the tests", "Repair loop", "Multi-agent handoff", "Install for your agent", "Dogfooding", "Limitations", "FAQ"];
+
+  test("every section title (1 to 8) and its first paragraph are visible on first paint", async ({ page }) => {
+    await page.goto("/");
+    for (const [i, title] of titles.entries()) {
+      const section = page.locator(`#no-${i + 1}`);
+      await expect(section.getByRole("heading", { level: 2, name: title })).toBeVisible();
+      const first = section.locator("p").first();
+      await expect(first).toBeVisible();
+      expect((await first.innerText()).trim().length).toBeGreaterThan(10);
+      const style = await first.evaluate((el) => {
+        const cs = getComputedStyle(el);
+        return { opacity: cs.opacity, visibility: cs.visibility, display: cs.display };
+      });
+      expect(Number(style.opacity)).toBeGreaterThan(0);
+      expect(style.visibility).toBe("visible");
+      expect(style.display).not.toBe("none");
+    }
+  });
+
+  test("the hero, the receipts and every verdict are present without JavaScript", async ({ page }) => {
+    await page.goto("/");
+    await expect(page.getByRole("heading", { level: 1 })).toHaveText("Check what your coding agent says it did.");
+    await expect(page.locator("#no-1 .doc").getByText("verified").first()).toBeVisible();
+    await expect(page.locator("#no-1 .doc").getByText("contradicted").first()).toBeVisible();
+    await expect(page.locator("#no-1 .doc").getByText("not checked yet")).toHaveCount(0);
+    await expect(page.locator("#no-3").getByText("Attempt 2: ✓ PASS")).toBeVisible();
+  });
+});
+
+test("the copy button sits in the corner of the code block and never overlaps the text", async ({ page }) => {
+  for (const width of [1440, 390, 320]) {
+    await page.setViewportSize({ width, height: 900 });
+    await page.goto("/");
+    const block = page.locator("section").first().locator(".doc").first();
+    const button = block.getByRole("button", { name: "Copy the commands" });
+    const pre = block.locator("pre");
+    const b = (await button.boundingBox())!;
+    const box = (await block.boundingBox())!;
+    expect(b.x + b.width).toBeLessThanOrEqual(box.x + box.width + 1);
+    expect(b.y).toBeLessThanOrEqual(box.y + 2);
+    // no line of the commands runs under the button
+    const overlap = await pre.evaluate((el, left) => {
+      const range = document.createRange();
+      range.selectNodeContents(el);
+      const top = el.getBoundingClientRect().top;
+      return [...range.getClientRects()].some((r) => r.width > 0 && r.right > left && r.top < top + 40);
+    }, b.x);
+    expect(overlap).toBe(false);
+  }
+});
+

@@ -261,6 +261,11 @@ NOCAP  receipt f74b98d82a  ·  agent: unknown  ·  base 92e05bb → (1a294f9)
 
 Both are true catches with file evidence.
 
+## Credits
+
+- **Hero painting:** After Thomas Eakins, *The Chess Players* (1876), The Metropolitan Museum of Art, New York. Public domain (Open Access). The canvas was extended to the left for the landing page; the extended source is `docs/media/source/hero-chess-extended.png`, and `pnpm build:art` generates the web files in `apps/web/public/art/`.
+- **Fonts:** Old Standard TT and IBM Plex Sans and Mono, all under the SIL Open Font License 1.1 (licence texts in `apps/web/src/fonts/`).
+
 ## Architecture, API, privacy, development
 
 - Architecture: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).

@@ -259,3 +259,8 @@ a:hover .mark .check,
 .bg-sheet .text-muted {
   color: var(--ink-muted);
 }
+
+/* Grid children may shrink below their content, so wide receipts scroll inside their own document. */
+main .grid > * {
+  min-width: 0;
+}

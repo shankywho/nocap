@@ -16,6 +16,8 @@ export const ClaimType = z.enum([
   "bug_fixed",
   "refactor_no_behavior_change",
   "count_files_changed",
+  "version_bumped",
+  "snapshots_updated",
   "other",
 ]);
 

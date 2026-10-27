@@ -4,6 +4,7 @@ import type { ChangedFile } from "../git/types.js";
 import { isConfigPath, isTestPath } from "../git/classify.js";
 import { verifyCount } from "./count.js";
 import { verifyBugFixed, verifyBuild, verifyRefactor, verifyTestsAdded, verifyTestsPass } from "./dataDriven.js";
+import { verifySnapshotsUpdated, verifyVersionBump } from "./housekeeping.js";
 import { verifyDependency } from "./dependency.js";
 import { verifyFileSet } from "./fileSet.js";
 import { fileEvidence, unverifiable, type VerifyContext } from "./helpers.js";
@@ -37,6 +38,10 @@ export async function verifyClaim(claim: Claim, ctx: VerifyContext): Promise<Ver
       return verifyBugFixed(claim, ctx);
     case "refactor_no_behavior_change":
       return verifyRefactor(claim, ctx);
+    case "version_bumped":
+      return verifyVersionBump(claim, ctx);
+    case "snapshots_updated":
+      return verifySnapshotsUpdated(claim, ctx);
     case "count_files_changed":
       return verifyCount(claim, ctx);
     default:

@@ -186,6 +186,17 @@ const RULES: Rule[] = [
     }),
   },
   {
+    type: "version_bumped",
+    pattern:
+      /\b(?:bump(?:ed|ing)?|increment(?:ed)?|raised?|updated?|set)\s+(?:the\s+)?(?:package\s+|project\s+)?version(?:\s+(?:number\s+)?(?:to|→|->)\s+v?(\d+\.\d+\.\d+[\w.+-]*))?|\bversion\s+bump(?:ed)?(?:\s+(?:to|→|->)\s+v?(\d+\.\d+\.\d+[\w.+-]*))?|\bbump(?:ed)?\s+(?:\S+\s+)?to\s+v?(\d+\.\d+\.\d+[\w.+-]*)/i,
+    build: (match) => ({ type: "version_bumped", subject: (match[1] ?? match[2] ?? match[3])?.replace(/[.+-]+$/, "") ?? null }),
+  },
+  {
+    type: "snapshots_updated",
+    pattern: /\b(?:regenerated|regenerate|updated|refreshed|re-?recorded|rebuilt|re-?generated)\s+(?:the\s+)?(?:\w+\s+)?(golden(?:s| files?)?|snapshots?)\b/i,
+    build: (match) => ({ type: "snapshots_updated", subject: match[1]?.toLowerCase() ?? null }),
+  },
+  {
     type: "bug_fixed",
     pattern: /\b(?:fixed|resolved)\s+(?:the\s+)?(.+?)[.!?]?$/i,
     build: (match) => ({ type: "bug_fixed", subject: match[1] ?? null }),
@@ -305,6 +316,9 @@ function toRawClaim(quote: string, match: RuleMatch, fallbackPaths: string[]): R
   ) {
     subject = cleaned;
   }
+
+  // A version number must survive: cleanSubject strips the dots.
+  if (match.type === "version_bumped") subject = match.subject ?? null;
 
   const symbolKeywords = symbols.flatMap((symbol) => keywordPartsForSymbol(symbol));
 

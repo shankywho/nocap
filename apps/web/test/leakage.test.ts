@@ -33,6 +33,7 @@ afterEach(() => {
   }
 });
 
+const pubOf = async (res: Response) => (await res.json()) as { id: string; deleteToken: string };
 const text = async (r: Response) => r.text();
 const clean = (s: string) => {
   expect(s).not.toContain("SENTINEL");
@@ -47,7 +48,7 @@ describe("web API leakage", () => {
   });
 
   it("read endpoints never return delete tokens or hashes", async () => {
-    const pub = await (await publish(new Request("http://x.test/api/receipts", { method: "POST", body: JSON.stringify(sample) }))).json();
+    const pub = await pubOf(await publish(new Request("http://x.test/api/receipts", { method: "POST", body: JSON.stringify(sample) })));
     for (const res of [await getOne(new Request("http://x.test"), ctx(pub.id)), await raw(new Request("http://x.test"), ctx(pub.id)), await examples(), await scorecard(), await chain(new Request("http://x.test"), { params: Promise.resolve({ chainId: sample.chain.chainId }) })]) {
       const body = await text(res);
       clean(body);
@@ -56,7 +57,7 @@ describe("web API leakage", () => {
   });
 
   it("publish returns the delete token exactly once and the store keeps only its hash", async () => {
-    const pub = await (await publish(new Request("http://x.test/api/receipts", { method: "POST", body: JSON.stringify(sample) }))).json();
+    const pub = await pubOf(await publish(new Request("http://x.test/api/receipts", { method: "POST", body: JSON.stringify(sample) })));
     const { getStore } = await import("../src/server/store");
     const row = await getStore().get(pub.id);
     expect(row?.deleteTokenHash).toMatch(/^[0-9a-f]{64}$/);

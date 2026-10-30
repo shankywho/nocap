@@ -163,3 +163,10 @@ Anything that could not be confirmed against the source is marked **UNVERIFIED**
 - Decision: `scripts/pack-cli.mjs` bundles the CLI and `scripts/build-fixtures.ts` with esbuild into `.cache/pack-cli`, copies `fixtures/`, writes a dependency-free staging `package.json` and runs `npm pack`. The workspace manifest is untouched. `demo` detects the packaged layout, builds the scenario in `$TMPDIR/nocap-demo`, installs `vitest` there (network) and falls back to `--no-exec` if that fails. npm strips `.gitignore` from tarballs, so build-fixtures writes `node_modules/` into each scenario repo.
 - Alternatives: publishing `@nocap/core` and `@nocap/mcp` separately.
 - Verified: installed the tarball into an empty project and ran `npx nocap demo toothless` (toothless caught, exit 1 FAIL).
+
+## 2026-10-26 · P11 · Codex and Gemini hooks share the Stop-hook runner
+
+- Context: stretch phase P11 asks for `hook codex` (notify) and `hook gemini` (AfterAgent).
+- Decision: `runHook(io, env, agent)` parses a per-agent payload (`claude` Stop, `codex` notify JSON as argv or stdin, `gemini` AfterAgent) and shares the pipeline, saved receipts and the 2-blocks-per-session counter (keyed `agent:session`). Codex cannot block, so it only reports. Gemini denies with `{"decision":"deny","reason"}` when `NOCAP_BLOCK=1`.
+- Payload shapes are the best-known formats and are **UNVERIFIED** against each agent's current docs. `init --all` does not write these hooks; the docs page shows the manual snippet.
+- Verified: `apps/cli/test/hook.test.ts` with sample payloads.

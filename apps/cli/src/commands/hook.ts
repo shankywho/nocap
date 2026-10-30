@@ -11,6 +11,56 @@ interface StopPayload {
   last_assistant_message?: string;
 }
 
+export type HookAgent = "claude" | "codex" | "gemini";
+export const HOOK_AGENTS: readonly HookAgent[] = ["claude", "codex", "gemini"];
+
+interface Parsed {
+  cwd: string | undefined;
+  summary: string | null;
+  sessionId: string | undefined;
+  active: boolean;
+  /** Agent-specific stdout line that sends the agent back to work, or null when the agent cannot be blocked. */
+  block: ((reason: string) => string) | null;
+}
+
+/**
+ * Payload shapes are the best-known ones and UNVERIFIED against each agent's current docs (DECISIONS.md).
+ * - claude: Stop hook JSON on stdin; block = {"decision":"block","reason"}.
+ * - codex: `notify` runs the program with one JSON argument (type agent-turn-complete, kebab-case keys). It cannot block.
+ * - gemini: AfterAgent hook JSON on stdin (prompt_response); block = {"decision":"deny","reason"}.
+ */
+async function parsePayload(agent: HookAgent, raw: unknown): Promise<Parsed> {
+  const o = (typeof raw === "object" && raw !== null ? raw : {}) as Record<string, unknown>;
+  const str = (v: unknown) => (typeof v === "string" ? v : undefined);
+  if (agent === "codex") {
+    if (o.type !== undefined && o.type !== "agent-turn-complete") return { cwd: undefined, summary: null, sessionId: undefined, active: false, block: null };
+    return {
+      cwd: str(o.cwd),
+      summary: str(o["last-assistant-message"]) ?? str(o.last_assistant_message) ?? null,
+      sessionId: str(o["thread-id"]) ?? str(o["turn-id"]) ?? str(o.session_id),
+      active: false,
+      block: null,
+    };
+  }
+  if (agent === "gemini") {
+    return {
+      cwd: str(o.cwd),
+      summary: str(o.prompt_response) ?? null,
+      sessionId: str(o.session_id),
+      active: o.stop_hook_active === true,
+      block: (reason) => JSON.stringify({ decision: "deny", reason }),
+    };
+  }
+  const p = o as StopPayload;
+  return {
+    cwd: p.cwd,
+    summary: p.last_assistant_message ?? (await lastAssistantText(p.transcript_path)),
+    sessionId: p.session_id,
+    active: p.stop_hook_active === true,
+    block: (reason) => JSON.stringify({ decision: "block", reason }),
+  };
+}
+
 const MAX_BLOCKS = 2;
 
 /** Best-effort: the last assistant text block from the transcript JSONL (the format is internal and unstable). */
@@ -52,16 +102,16 @@ export interface HookIO {
   stderr: (text: string) => void;
 }
 
-/** Claude Code Stop hook. Report-only by default; blocks only with NOCAP_BLOCK=1. Always exits 0. */
-export async function runHook(io: HookIO, env: NodeJS.ProcessEnv = process.env): Promise<number> {
+/** Agent hook (claude Stop, codex notify, gemini AfterAgent). Report-only by default; blocks only with NOCAP_BLOCK=1 where the agent supports it. Always exits 0. */
+export async function runHook(io: HookIO, env: NodeJS.ProcessEnv = process.env, agent: HookAgent = "claude"): Promise<number> {
   try {
-    const payload = JSON.parse(io.stdin || "{}") as StopPayload;
-    const repoPath = payload.cwd ?? process.cwd();
-    const summary = payload.last_assistant_message ?? (await lastAssistantText(payload.transcript_path));
+    const parsed = await parsePayload(agent, JSON.parse(io.stdin || "{}"));
+    const repoPath = parsed.cwd ?? process.cwd();
+    const summary = parsed.summary;
     if (!summary || summary.trim().length === 0) return 0;
 
     const { receipt, repair, savedTo } = await verifyLocal(
-      { repoPath, summary, agent: "claude-code", chain: "auto", offline: envFlag(env.NOCAP_OFFLINE) },
+      { repoPath, summary, agent: agent === "claude" ? "claude-code" : agent === "codex" ? "codex" : "gemini-cli", chain: "auto", offline: envFlag(env.NOCAP_OFFLINE) },
       env,
     );
     if (receipt.claims.length === 0) return 0;
@@ -69,15 +119,15 @@ export async function runHook(io: HookIO, env: NodeJS.ProcessEnv = process.env):
     const t = receipt.totals;
     io.stderr(`nocap: ${receipt.overall} ${t.contradicted}✗ ${t.unverifiable}!${savedTo ? ` → ${savedTo.replace(`${repoPath}/`, "")}` : ""}\n`);
 
-    if (envFlag(env.NOCAP_BLOCK) && receipt.overall === "FAIL" && repair && payload.stop_hook_active !== true) {
+    if (parsed.block && envFlag(env.NOCAP_BLOCK) && receipt.overall === "FAIL" && repair && !parsed.active) {
       const stateFile = join(repoPath, ".nocap", "hook-state.json");
       const state = await readState(stateFile);
-      const key = payload.session_id ?? "default";
+      const key = `${agent}:${parsed.sessionId ?? "default"}`;
       if ((state[key] ?? 0) < MAX_BLOCKS) {
         state[key] = (state[key] ?? 0) + 1;
         await mkdir(join(repoPath, ".nocap"), { recursive: true });
         await writeFile(stateFile, JSON.stringify(state));
-        io.stdout(`${JSON.stringify({ decision: "block", reason: repairMarkdown(repair) })}\n`);
+        io.stdout(`${parsed.block(repairMarkdown(repair))}\n`);
       }
     }
     return 0;

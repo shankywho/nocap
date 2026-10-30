@@ -1,5 +1,6 @@
 import { mkdtemp, readFile, rm, stat, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
+import { fileURLToPath } from "node:url";
 import { join } from "node:path";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { llmStatus, makeLlm, resolveLlmKey } from "@nocap/core/adapters";
@@ -97,5 +98,46 @@ describe("check output", () => {
     expect(banners).toHaveLength(1);
     expect(banners[0]).toContain("nocap config set llm-key");
     expect(outs.join("")).toMatch(/RESULT .*· offline/);
+  }, 60_000);
+});
+
+describe("demo --live", () => {
+  it("stays offline by default and refuses --live without a key", async () => {
+    const { demoMode } = await import("../src/commands/demo");
+    const empty = await mkdtemp(join(tmpdir(), "nocap-demo-live-"));
+    expect(demoMode(false, { HOME: empty })).toEqual({ ok: true, offline: true });
+    expect(demoMode(false, { HOME: empty, GROQ_API_KEY: "k" })).toEqual({ ok: true, offline: true });
+    const refused = demoMode(true, { HOME: empty });
+    expect(refused.ok).toBe(false);
+    expect(refused.ok === false && refused.message).toContain("nocap config set llm-key");
+    expect(demoMode(true, { HOME: empty, GROQ_API_KEY: "k" })).toEqual({ ok: true, offline: false });
+    await rm(empty, { recursive: true, force: true });
+  });
+
+  it("with a live model the RESULT line names it; the offline default says offline", async () => {
+    const tmp = await mkdtemp(join(tmpdir(), "nocap-live-"));
+    await buildFixtures({ quiet: true, cacheDir: tmp, scenarios: ["toothless"] });
+    const summary = await readFile(join(fileURLToPath(new URL("../../..", import.meta.url)), "fixtures/scenarios/toothless/summary.md"), "utf8");
+    const mock = new MockLlm();
+    const liveLlm = { json: async (a: Parameters<MockLlm["json"]>[0]) => ({ ...(await mock.json(a)), provider: "groq", model: "openai/gpt-oss-120b" }) } as MockLlm;
+    const grab = async (opts: Parameters<typeof runCheck>[0]) => {
+      const outs: string[] = [];
+      const o = process.stdout.write.bind(process.stdout);
+      const e = process.stderr.write.bind(process.stderr);
+      process.stdout.write = ((t: string) => (outs.push(String(t)), true)) as typeof process.stdout.write;
+      process.stderr.write = (() => true) as typeof process.stderr.write;
+      try {
+        await runCheck(opts, { PATH: process.env.PATH ?? "", HOME: tmp });
+      } finally {
+        process.stdout.write = o;
+        process.stderr.write = e;
+      }
+      return outs.join("");
+    };
+    const live = await grab({ cwd: join(tmp, "toothless"), summaryText: summary, exec: false, offline: false, llm: liveLlm });
+    expect(live).toMatch(/RESULT .*· gpt-oss-120b@groq/);
+    const offline = await grab({ cwd: join(tmp, "toothless"), summaryText: summary, exec: false, offline: true });
+    expect(offline).toMatch(/RESULT .*· offline/);
+    await rm(tmp, { recursive: true, force: true });
   }, 60_000);
 });

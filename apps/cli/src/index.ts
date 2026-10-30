@@ -57,7 +57,8 @@ export function buildProgram(onExit: (code: number) => void = (code) => process.
     .command("demo [scenario]")
     .description("build a fixture scenario in .cache and verify it with live output")
     .option("--no-exec", "static checks only")
-    .action(async (scenario: string | undefined, opts: { exec: boolean }) => onExit(await runDemo(scenario ?? "toothless", opts)));
+    .option("--live", "extract claims with your configured model key instead of the offline extractor")
+    .action(async (scenario: string | undefined, opts: { exec: boolean; live?: boolean }) => onExit(await runDemo(scenario ?? "toothless", opts)));
 
   program
     .command("loop")

@@ -12,7 +12,7 @@
     {
       "type": "tests_added",
       "status": "verified",
-      "bitecheck": "import_only"
+      "bitecheck": "bites"
     }
   ],
   "flags": [],

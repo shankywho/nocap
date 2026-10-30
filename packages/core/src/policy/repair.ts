@@ -18,6 +18,10 @@ export function repairText(claim: Claim, verdict: Verdict): string | null {
     case "tests_added": {
       const bc = verdict.bitecheck;
       const test = bc?.selectedTests[0]?.file ?? "the new test file";
+      if (bc?.outcome === "toothless" && bc.mode === "stub") {
+        const fns = bc.stubbed.map((x) => x.split(" › ")[1]).join(", ");
+        return `Your tests in \`${test}\` still pass when the body of ${fns} is replaced with \`return undefined\`, so they only check that it exists. Assert on what it returns, then run nocap again.`;
+      }
       if (bc?.outcome === "toothless") {
         const src = bc.revertedFiles.join(", ") || "your source change";
         return `Your tests in \`${test}\` still pass with your change to \`${src}\` reverted, so they don't exercise it. Add assertions that depend on the new behaviour, then run nocap again.`;

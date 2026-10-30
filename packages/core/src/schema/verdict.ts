@@ -18,6 +18,10 @@ export const BitecheckResult = z.object({
     "environment",
     "no_matching_tests",
   ]),
+  /** `revert`: source files went back to base. `stub`: added functions were stubbed to `return undefined`. */
+  mode: z.enum(["revert", "stub"]).default("revert"),
+  /** In stub mode, the functions that were stubbed, as `path › name`. */
+  stubbed: z.array(z.string()).default([]),
   selectedTests: z.array(z.object({ file: z.string(), title: z.string() })),
   revertedFiles: z.array(z.string()),
   deletedForRevert: z.array(z.string()),

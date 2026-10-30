@@ -18,11 +18,12 @@ function evidenceLines(verdict: Verdict): string[] {
   if (bc && (bc.outcome === "toothless" || bc.outcome === "bites" || bc.outcome === "import_only")) {
     const re = bc.reverted;
     const n = re && re.kind === "testRun" ? re : null;
-    const reverted = bc.revertedFiles.concat(bc.deletedForRevert).join(", ") || "source";
+    const what = bc.mode === "stub" ? `stubbed ${bc.stubbed.map((x) => x.split(" › ")[1]).join(", ")}()` : `reverted ${bc.revertedFiles.concat(bc.deletedForRevert).join(", ") || "source"}`;
+    const tag = bc.mode === "stub" ? " (stub)" : "";
     if (bc.outcome === "toothless" && n) {
-      lines.push(`BITECHECK reverted ${reverted} → ${n.passed}/${n.total} matching tests STILL PASS`, "these tests don't exercise your change");
+      lines.push(`BITECHECK${tag} ${what} → ${n.passed}/${n.total} matching tests STILL PASS`, "these tests don't exercise your change");
     } else if (n) {
-      lines.push(`BITECHECK reverted ${reverted} → ${n.failed}/${n.total} matching tests fail${bc.outcome === "import_only" ? " (weak: fails only at import)" : ""}`);
+      lines.push(`BITECHECK${tag} ${what} → ${n.failed}/${n.total} matching tests fail${bc.outcome === "import_only" ? " (weak: fails only at import)" : ""}`);
     }
     return lines;
   }

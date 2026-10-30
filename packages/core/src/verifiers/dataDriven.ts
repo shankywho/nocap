@@ -44,14 +44,14 @@ function fromBitecheck(claim: Claim, ctx: VerifyContext, kind: "added" | "fixed"
   const opts = { bitecheck: bc };
   switch (bc.outcome) {
     case "bites":
-      return verified("The tests pass on head and fail with the source change reverted.", ev, opts);
+      return verified(bc.mode === "stub" ? "The tests pass on head and fail when the added functions are stubbed to return undefined." : "The tests pass on head and fail with the source change reverted.", ev, opts);
     case "import_only":
       return kind === "added"
         ? verified("Tests bite (weak: fails only at import).", ev, opts)
         : unverifiable("The tests fail on revert only at import, which does not prove the fix.", ev);
     case "toothless":
       return kind === "added"
-        ? { ...contradicted("The tests still pass with the source change reverted, so they do not exercise it.", ev, opts) }
+        ? { ...contradicted(bc.mode === "stub" ? "The tests still pass with the added functions stubbed to return undefined, so they only check that the functions exist." : "The tests still pass with the source change reverted, so they do not exercise it.", ev, opts) }
         : unverifiable("Matching tests pass without the fix, so they do not prove it.", ev);
     case "broken_on_head":
       return contradicted("The claimed tests fail on head.", ev, opts);

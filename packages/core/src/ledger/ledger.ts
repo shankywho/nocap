@@ -38,6 +38,7 @@ export function trackedPaths(receipt: Receipt, index: number): string[] {
   for (const t of item.verdict.bitecheck?.selectedTests ?? []) out.add(t.file);
   for (const p of item.verdict.bitecheck?.revertedFiles ?? []) out.add(p);
   for (const p of item.verdict.bitecheck?.deletedForRevert ?? []) out.add(p);
+  for (const s of item.verdict.bitecheck?.stubbed ?? []) out.add(s.split(" › ")[0] as string);
   return [...out];
 }
 

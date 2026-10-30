@@ -70,7 +70,7 @@ describe("countIntegrity", () => {
 const claim: Claim = { id: "c1", quote: "Added tests for retry", type: "tests_added", subject: "retry", keywords: [], paths: [], symbols: [], count: null, command: null, span: null };
 const bad: Verdict = {
   status: "contradicted", reason: "toothless", evidence: [], flags: [], repair: null,
-  bitecheck: { outcome: "toothless", selectedTests: [{ file: "test/retry.test.ts", title: "t" }], revertedFiles: ["src/retry.ts"], deletedForRevert: [], head: null, reverted: null },
+  bitecheck: { outcome: "toothless", mode: "revert", stubbed: [], selectedTests: [{ file: "test/retry.test.ts", title: "t" }], revertedFiles: ["src/retry.ts"], deletedForRevert: [], head: null, reverted: null },
 };
 const ok: Verdict = { status: "verified", reason: "fine", evidence: [], flags: [], bitecheck: null, repair: null };
 const warn: Verdict = { ...ok, flags: [{ rule: "skip_added", severity: "warn", path: "a", line: 1, detail: "d" }] };

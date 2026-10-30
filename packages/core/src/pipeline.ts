@@ -18,6 +18,7 @@ import type { Receipt, TraceStep } from "./schema/receipt.js";
 import type { BitecheckResult, Flag, Verdict } from "./schema/verdict.js";
 import type { TestRunResult } from "./runners/types.js";
 import { countIntegrity } from "./tamper/countIntegrity.js";
+import { buildMasks } from "./tamper/mask.js";
 import { tamperFlags } from "./tamper/rules.js";
 import { claimConcept, type VerifyContext } from "./verifiers/helpers.js";
 import { undisclosedChanges, verifyClaim } from "./verifiers/index.js";
@@ -210,7 +211,7 @@ async function verifyInner(input: VerifyInput): Promise<VerifyOutput> {
 
   // Tamper flags attach to the tests_pass claim when one exists, otherwise they are global.
   const flags: Flag[] = await step("tamper", async () => {
-    const found = tamperFlags(changeSet);
+    const found = tamperFlags(changeSet, await buildMasks(changeSet.hunks.map((h) => h.path), (p) => show(refs.headSha, p), (p) => show(refs.baseSha, p)));
     const integrity = await countIntegrity({
       changeSet, summary,
       readAtBase: (p) => show(refs.baseSha, p),
@@ -252,7 +253,7 @@ async function verifyInner(input: VerifyInput): Promise<VerifyOutput> {
   let gamed = false;
   if (parent) {
     const delta = await readChangeSet({ git, repoPath: refs.repoRoot, baseSha: parent.input.head, headSha: refs.headSha }).catch(() => null);
-    const deltaFlags = delta ? tamperFlags(delta) : [];
+    const deltaFlags = delta ? tamperFlags(delta, await buildMasks(delta.hunks.map((h) => h.path), (p) => show(refs.headSha, p), (p) => show(parent.input.head, p))) : [];
     if (delta) {
       const integrity = await countIntegrity({
         changeSet: delta, summary,

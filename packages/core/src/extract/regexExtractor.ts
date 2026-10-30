@@ -364,6 +364,27 @@ export function extractClaims(summary: string, _changedPaths: string[] = []): Ra
       claims.push(claim);
     }
 
+    // "Added `x()` in/to src/x.ts" states a symbol and a file change: emit both.
+    if (primary?.match.type === "symbol_added") {
+      const target = /\b(?:in|to)\s+`?([A-Za-z0-9_.-]+(?:\/[A-Za-z0-9_.-]+)*\.[A-Za-z0-9]+)`?/i.exec(sentence)?.[1];
+      if (target && extractPaths(sentence).includes(target)) {
+        const key = `file_modified:${sentence.toLowerCase()}`;
+        if (!seen.has(key)) {
+          seen.add(key);
+          claims.push({
+            quote: sentence,
+            type: "file_modified",
+            subject: null,
+            keywords: [],
+            paths: [normalisePath(target)],
+            symbols: [],
+            count: null,
+            command: null,
+          });
+        }
+      }
+    }
+
     // "Created `src/backoff.ts` with `computeDelay()`" also states a symbol.
     if (primary?.match.type === "file_created") {
       for (const symbol of extractSymbols(sentence)) {

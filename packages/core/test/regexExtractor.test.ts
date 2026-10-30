@@ -112,3 +112,23 @@ describe("symbol_added rule", () => {
     expect(extractClaims("Created `src/backoff.ts` with `computeDelay()`.", []).map((c) => c.type)).toEqual(["file_created", "symbol_added"]);
   });
 });
+
+describe("symbol + file sentences", () => {
+  it("'Added `x()` in <path>' yields symbol_added and file_modified", () => {
+    const claims = extractClaims("Added `computeDelay()` in src/backoff.ts.");
+    expect(claims.map((c) => c.type).sort()).toEqual(["file_modified", "symbol_added"]);
+    const sym = claims.find((c) => c.type === "symbol_added");
+    const file = claims.find((c) => c.type === "file_modified");
+    expect(sym?.symbols).toContain("computeDelay");
+    expect(file?.paths).toEqual(["src/backoff.ts"]);
+  });
+
+  it("'Implemented `x()` to <path>' does the same", () => {
+    const claims = extractClaims("Implemented `mul()` to src/math.ts");
+    expect(claims.map((c) => c.type).sort()).toEqual(["file_modified", "symbol_added"]);
+  });
+
+  it("a symbol sentence without a path stays a single claim", () => {
+    expect(extractClaims("Added `computeDelay()`.").map((c) => c.type)).toEqual(["symbol_added"]);
+  });
+});

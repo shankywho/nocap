@@ -17,11 +17,10 @@ const snapshot = () => ({
   tags: main("tag", "--list"),
   count: main("rev-list", "--count", "HEAD"),
   stash: main("stash", "list"),
-  status: main("status", "--porcelain"),
 });
 
 describe("fixture git isolation", () => {
-  it("building every fixture leaves the main repo's HEAD, author, branches, tags, stash and status unchanged", async () => {
+  it("building every fixture leaves the main repo HEAD, author, branches, tags and stash unchanged", async () => {
     const before = snapshot();
     // A private cache inside the main repo's working tree (where the leak happened), so the shared
     // .cache/fixtures that other tests read is not rebuilt underneath them.

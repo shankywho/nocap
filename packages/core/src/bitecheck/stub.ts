@@ -1,4 +1,15 @@
-import { Node, Project, type SourceFile } from "ts-morph";
+import type { Node as TsNode, SourceFile } from "ts-morph";
+
+/** ts-morph pulls in the whole TypeScript compiler, so it is loaded only when a stub is actually needed. */
+type TsMorph = typeof import("ts-morph");
+let loaded: TsMorph | null = null;
+async function ensureTs(): Promise<void> {
+  loaded ??= await import("ts-morph");
+}
+const T = (): TsMorph => {
+  if (!loaded) throw new Error("ts-morph is not loaded");
+  return loaded;
+};
 
 const TS_JS = /\.(?:[cm]?[jt]sx?)$/;
 const PY = /\.py$/;
@@ -8,14 +19,15 @@ export const isStubbable = (path: string): boolean => TS_JS.test(path) || PY.tes
 /* ── TypeScript / JavaScript (ts-morph) ─────────────────────────────────── */
 
 function load(path: string, text: string): SourceFile {
-  const project = new Project({ useInMemoryFileSystem: true, skipAddingFilesFromTsConfig: true, compilerOptions: { allowJs: true, jsx: 1 } });
+  const project = new (T().Project)({ useInMemoryFileSystem: true, skipAddingFilesFromTsConfig: true, compilerOptions: { allowJs: true, jsx: 1 } });
   return project.createSourceFile(path, text, { overwrite: true });
 }
 
-type Fn = { name: string; node: Node };
+type Fn = { name: string; node: TsNode };
 
 /** Top-level functions, `const f = () => …` / `function` expressions, and class methods, by qualified name. Declarations without a body are skipped. */
 function tsFunctions(sf: SourceFile): Fn[] {
+  const { Node } = T();
   const out: Fn[] = [];
   for (const fn of sf.getFunctions()) {
     const name = fn.getName();
@@ -33,7 +45,8 @@ function tsFunctions(sf: SourceFile): Fn[] {
   return out;
 }
 
-function stubTsBody(node: Node): void {
+function stubTsBody(node: TsNode): void {
+  const { Node } = T();
   if (Node.isArrowFunction(node)) {
     const body = node.getBody();
     if (Node.isBlock(body)) node.setBodyText("return undefined;");
@@ -106,6 +119,7 @@ interface BodyInfo {
 }
 
 function tsBodies(sf: SourceFile): Map<string, BodyInfo> {
+  const { Node } = T();
   const map = new Map<string, BodyInfo>();
   for (const f of tsFunctions(sf)) {
     const n = f.node;
@@ -119,7 +133,8 @@ function tsBodies(sf: SourceFile): Map<string, BodyInfo> {
   return map;
 }
 
-function revertTsFunction(node: Node, base: BodyInfo): void {
+function revertTsFunction(node: TsNode, base: BodyInfo): void {
+  const { Node } = T();
   if (Node.isArrowFunction(node)) {
     const body = node.getBody();
     if (Node.isBlock(body) && !base.isExpression) node.setBodyText(base.text);
@@ -145,8 +160,8 @@ function revertPython(baseText: string, headText: string, skip: Set<string>): st
 }
 
 /** The Bitecheck mutation for one source file: added functions are stubbed, modified pre-existing functions go back to their base bodies. */
-export function mutateForStub(path: string, baseText: string | null, headText: string, added: string[]): string {
-  const stubbed = stubFunctions(path, headText, added);
+export async function mutateForStub(path: string, baseText: string | null, headText: string, added: string[]): Promise<string> {
+  const stubbed = await stubFunctions(path, headText, added);
   if (baseText === null) return stubbed;
   if (PY.test(path)) return revertPython(baseText, stubbed, new Set(added));
   try {
@@ -165,10 +180,11 @@ export function mutateForStub(path: string, baseText: string | null, headText: s
 
 /* ── Public API ─────────────────────────────────────────────────────────── */
 
-export function functionNames(path: string, text: string): string[] {
+export async function functionNames(path: string, text: string): Promise<string[]> {
   if (PY.test(path)) return [...new Set(pyDefs(text).map((d) => d.name))];
   if (!TS_JS.test(path)) return [];
   try {
+    await ensureTs();
     return [...new Set(tsFunctions(load(path, text)).map((f) => f.name))];
   } catch {
     return [];
@@ -176,17 +192,18 @@ export function functionNames(path: string, text: string): string[] {
 }
 
 /** Functions present at head but not at base. A file that is new at base has every function added. */
-export function addedFunctions(path: string, baseText: string | null, headText: string): string[] {
-  const head = functionNames(path, headText);
+export async function addedFunctions(path: string, baseText: string | null, headText: string): Promise<string[]> {
+  const head = await functionNames(path, headText);
   if (baseText === null) return head;
-  const base = new Set(functionNames(path, baseText));
+  const base = new Set(await functionNames(path, baseText));
   return head.filter((n) => !base.has(n));
 }
 
 /** Replaces each named function's body with `return undefined` (`return None` in Python). Signatures and exports stay. */
-export function stubFunctions(path: string, headText: string, names: string[]): string {
+export async function stubFunctions(path: string, headText: string, names: string[]): Promise<string> {
   const wanted = new Set(names);
   if (PY.test(path)) return stubPython(headText, wanted);
+  await ensureTs();
   const sf = load(path, headText);
   // Stub inner nodes first so outer replacements do not invalidate them.
   const targets = tsFunctions(sf).filter((f) => wanted.has(f.name));

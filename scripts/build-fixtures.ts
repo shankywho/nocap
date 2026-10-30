@@ -6,8 +6,8 @@
  * can be compared across machines.
  */
 import { existsSync } from "node:fs";
-import { cp, mkdir, readFile, readdir, rm, symlink, writeFile } from "node:fs/promises";
-import { dirname, join, relative } from "node:path";
+import { cp, mkdir, readFile, readdir, realpath, rm, symlink, writeFile } from "node:fs/promises";
+import { dirname, join, relative, resolve, sep } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { execa } from "execa";
 
@@ -58,15 +58,28 @@ function gitEnv(date: string, extra: Record<string, string> = {}): Record<string
   };
 }
 
-async function git(cwd: string, args: string[], date = FIXED_DATE): Promise<string> {
+/**
+ * Runs git for a fixture repo. The fixed author/committer identity is passed only to child processes whose cwd is
+ * strictly inside the fixture cache, never the main repository (an unguarded commit there once leaked an "agent change"
+ * commit into main). GIT_CEILING_DIRECTORIES stops git from walking up into a parent repo when the fixture's own
+ * .git is missing, so the command fails instead of committing to the wrong repo.
+ */
+export async function runFixtureGit(cacheRoot: string, repoRoot: string, cwd: string, args: string[], date = FIXED_DATE): Promise<string> {
+  const cwdAbs = resolve(cwd);
+  const cache = resolve(cacheRoot);
+  const root = resolve(repoRoot);
+  const inside = cwdAbs.startsWith(`${cache}${sep}`);
+  if (!inside || cwdAbs === root || cache === root) {
+    throw new Error(`refusing to run git in ${cwdAbs}: fixture git must run strictly inside ${cache}, never the repo root ${root}`);
+  }
   const result = await execa("git", args, {
-    cwd,
-    env: gitEnv(date),
+    cwd: cwdAbs,
+    env: { ...gitEnv(date), GIT_CEILING_DIRECTORIES: cache },
     extendEnv: false,
     reject: false,
   });
   if (result.exitCode !== 0) {
-    throw new Error(`git ${args.join(" ")} failed in ${cwd}: ${result.stderr}`);
+    throw new Error(`git ${args.join(" ")} failed in ${cwdAbs}: ${result.stderr}`);
   }
   return result.stdout;
 }
@@ -98,6 +111,7 @@ export async function buildFixtures(opts: BuildFixtureOptions = {}): Promise<Bui
   const base = join(root, "fixtures", "project");
   const cache = opts.cacheDir ?? join(root, ".cache", "fixtures");
   const built: BuiltScenario[] = [];
+  const git = (cwd: string, args: string[], date = FIXED_DATE) => runFixtureGit(cache, root, cwd, args, date);
 
   await mkdir(cache, { recursive: true });
 
@@ -118,6 +132,8 @@ export async function buildFixtures(opts: BuildFixtureOptions = {}): Promise<Bui
     if (existsSync(join(root, "node_modules"))) await symlink(join(root, "node_modules"), join(dest, "node_modules"), "junction");
 
     await git(dest, ["init", "-q", "-b", "main"]);
+    const top = (await git(dest, ["rev-parse", "--show-toplevel"])).trim();
+    if ((await realpath(top)) !== (await realpath(dest))) throw new Error(`fixture repo for ${name} resolved to ${top}, expected ${dest}`);
     await git(dest, ["config", "core.autocrlf", "false"]);
     await git(dest, ["config", "core.fileMode", "false"]);
     await git(dest, ["add", "-A"]);

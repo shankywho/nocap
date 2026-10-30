@@ -1,4 +1,5 @@
-import { readFile } from "node:fs/promises";
+import { mkdtemp, readFile, rm } from "node:fs/promises";
+import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { execa } from "execa";
@@ -32,36 +33,44 @@ function cleanEnv(): Record<string, string> {
 
 describe("fixture universe", () => {
   it("materialises deterministic repos with a green head suite", async () => {
-    const first = await buildFixtures({ quiet: true });
-    const second = await buildFixtures({ quiet: true });
-    expect(first.map((s) => s.name)).toEqual([...SCENARIOS]);
-    expect(second.map((s) => s.headSha)).toEqual(first.map((s) => s.headSha));
+    // Private cache dir: other test files rebuild the shared .cache/fixtures concurrently.
+    const cacheDir = await mkdtemp(join(tmpdir(), "nocap-selfcheck-"));
+    try {
+      const first = await buildFixtures({ quiet: true, cacheDir });
+      const second = await buildFixtures({ quiet: true, cacheDir });
+      expect(first.map((s) => s.name)).toEqual([...SCENARIOS]);
+      expect(second.map((s) => s.headSha)).toEqual(first.map((s) => s.headSha));
 
-    for (const scenario of first) {
-      const reportPath = join(root, ".cache", "fixtures", `${scenario.name}.head.json`);
-      const result = await execa(
-        vitestBin,
-        ["run", "--reporter=json", `--outputFile=${reportPath}`],
-        {
-          cwd: scenario.repoPath,
-          env: cleanEnv(),
-          extendEnv: false,
-          reject: false,
-        },
-      );
-      const counts = expectedCounts[scenario.name];
-      expect(counts, `missing expected counts for ${scenario.name}`).toBeDefined();
-      if (result.exitCode !== 0) {
-        throw new Error(`${scenario.name} head suite is red:\n${result.stdout}\n${result.stderr}`);
+      for (const scenario of first) {
+        const reportPath = join(cacheDir, `${scenario.name}.head.json`);
+        const result = await execa(
+          vitestBin,
+          ["run", "--reporter=json", `--outputFile=${reportPath}`],
+          {
+            cwd: scenario.repoPath,
+            env: cleanEnv(),
+            extendEnv: false,
+            reject: false,
+          },
+        );
+        const counts = expectedCounts[scenario.name];
+        expect(counts, `missing expected counts for ${scenario.name}`).toBeDefined();
+        if (result.exitCode !== 0) {
+          throw new Error(
+            `${scenario.name} head suite is red:\n${result.stdout}\n${result.stderr}`,
+          );
+        }
+        const report = JSON.parse(await readFile(reportPath, "utf8")) as {
+          numPassedTests: number;
+          numPendingTests: number;
+          numFailedTests: number;
+        };
+        expect(report.numFailedTests).toBe(0);
+        expect(report.numPassedTests).toBe(counts?.passed);
+        expect(report.numPendingTests).toBe(counts?.skipped);
       }
-      const report = JSON.parse(await readFile(reportPath, "utf8")) as {
-        numPassedTests: number;
-        numPendingTests: number;
-        numFailedTests: number;
-      };
-      expect(report.numFailedTests).toBe(0);
-      expect(report.numPassedTests).toBe(counts?.passed);
-      expect(report.numPendingTests).toBe(counts?.skipped);
+    } finally {
+      await rm(cacheDir, { recursive: true, force: true });
     }
   }, 120_000);
 });

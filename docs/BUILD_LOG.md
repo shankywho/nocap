@@ -51,3 +51,9 @@ Generated from `git log --reverse`. Regenerate with `pnpm build-log`.
 | Mon 20:42 | build(cli): self-contained tarball with packaged demo (pnpm pack:cli) |
 | Mon 20:42 | fix(build): lint in pack-cli script |
 | Mon 20:43 | fix(build): lint globals in pack-cli script |
+| Mon 20:47 | chore: v0.1.0 (selfcheck race fix, results, build log, handoff) |
+| Mon 21:09 | test: secret, path and env leakage tests for repo, receipts and web API |
+| Mon 21:11 | feat(cli): hook codex (notify) and hook gemini (AfterAgent) |
+| Mon 21:13 | feat(action): GitHub Action that comments the receipt on same-repo PRs |
+| Mon 21:18 | test(e2e): Playwright smoke tests for landing, receipt, demo stream and repair loop |
+| Mon 21:19 | feat(web): PrismaStore behind the ReceiptStore interface with lazy, safe fallback |

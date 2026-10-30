@@ -31,7 +31,7 @@ export default function Docs() {
       <P>A Stop hook checks the agent&apos;s final message. It reports by default. Set NOCAP_BLOCK=1 to block the agent on a ✗ (at most twice per session).</P>
       <Pre>{"npx @shankywho/nocap init claude --write          # project .claude/settings.json\nnpx @shankywho/nocap init claude --write --user   # ~/.claude/settings.json"}</Pre>
 
-      <P>Codex and Gemini CLI have hooks too (payload shapes unverified; see DECISIONS.md). Codex runs <code>notify</code> with the JSON as its last argument and cannot be blocked, so nocap only reports. Gemini&apos;s AfterAgent hook can deny, and does so with NOCAP_BLOCK=1.</P>
+      <P>Codex and Gemini CLI have hooks too (payload shapes unverified; see docs/decisions.md). Codex runs <code>notify</code> with the JSON as its last argument and cannot be blocked, so nocap only reports. Gemini&apos;s AfterAgent hook can deny, and does so with NOCAP_BLOCK=1.</P>
       <Pre>{'# ~/.codex/config.toml\nnotify = ["npx", "-y", "@shankywho/nocap", "hook", "codex"]\n\n# Gemini CLI settings: AfterAgent hook command\nnpx -y @shankywho/nocap hook gemini'}</Pre>
 
       <H id="mcp">MCP server</H>

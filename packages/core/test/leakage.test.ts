@@ -48,7 +48,7 @@ describe("repository leakage", () => {
       const text = readFileSync(path, "utf8");
       if (/\/Users\/[a-z][\w.-]*\//i.test(text) || /\/home\/[a-z][\w.-]*\//.test(text) || /\/var\/folders\//.test(text)) hits.push(file);
     }
-    // NOCAP_BUILD.md and docs may quote example paths; they must not contain a real home directory.
+    // The docs may quote example paths; they must not contain a real home directory.
     expect(hits).toEqual([]);
   });
 

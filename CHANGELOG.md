@@ -50,4 +50,4 @@ All notable changes to this project are documented here. The format follows Keep
 - `hook codex` and `hook gemini`, GitHub Action, leakage tests (secrets, home paths, env, web responses).
 
 ### Not included
-- Hosted Bitecheck (P12). The Prisma store is written and tested against a fake client only; it has not run against a real database. See DECISIONS.md.
+- Hosted Bitecheck (P12). The Prisma store is written and tested against a fake client only; it has not run against a real database. See docs/decisions.md.

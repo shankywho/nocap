@@ -124,7 +124,7 @@ Scenario 10: the backend agent claims `computeDelay()` but exports `getDelay()`.
 | Alan | `plugins/nocap` |
 | All | `AGENTS.md` (and `CLAUDE.md` if present) protocol block between `<!-- nocap:start -->` and `<!-- nocap:end -->` |
 
-The per-agent config shapes are the best-known formats and are **unverified** against each agent's current docs (see DECISIONS.md). Per-agent accuracy is on `/agents` and via `nocap scorecard`, with percentages after 10 claims. Those numbers are self-reported runs, not a model benchmark.
+The per-agent config shapes are the best-known formats and are **unverified** against each agent's current docs (see docs/decisions.md). Per-agent accuracy is on `/agents` and via `nocap scorecard`, with percentages after 10 claims. Those numbers are self-reported runs, not a model benchmark.
 
 ## Using with Alan
 
@@ -295,4 +295,4 @@ The model never sets a verdict. It splits the summary into claims and maps "auth
 
 Precision over recall: a false accusation costs trust faster than a miss. The eval gate is 0 false accusations on the honest scenarios, and anything uncertain is `!`.
 
-Trade-offs are in [DECISIONS.md](DECISIONS.md). Cut: Prisma store and Playwright (not installable offline here), Codex and Gemini hooks, hosted Bitecheck. Next: a real-agent loop eval, per-hunk revert, more runners.
+Trade-offs are in [docs/decisions.md](docs/decisions.md). Cut: Prisma store and Playwright (not installable offline here), Codex and Gemini hooks, hosted Bitecheck. Next: a real-agent loop eval, per-hunk revert, more runners.

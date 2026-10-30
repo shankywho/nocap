@@ -42,4 +42,4 @@ A receipt is immutable and carries its own `trace`, so the receipt is the run re
 
 ## Web
 
-`ReceiptStore` is the only storage interface. `MemoryStore` is seeded from `examples/*.json`; a Prisma store is not built (see DECISIONS.md). PR mode is a separate static pipeline (`prVerify`) over GitHub patches, with CI check runs standing in for the test run.
+`ReceiptStore` is the only storage interface. `MemoryStore` is seeded from `examples/*.json`; a Prisma store is not built (see docs/decisions.md). PR mode is a separate static pipeline (`prVerify`) over GitHub patches, with CI check runs standing in for the test run.

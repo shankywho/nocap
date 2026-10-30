@@ -27,4 +27,4 @@
 
 ## Status
 
-The tool name and arguments were taken from the public `alan-skills` repository (see DECISIONS.md). Whether Alan's gateway accepts a local stdio MCP server from a marketplace plugin is **unverified**; the remote-connector fallback above covers that case.
+The tool name and arguments were taken from the public `alan-skills` repository (see docs/decisions.md). Whether Alan's gateway accepts a local stdio MCP server from a marketplace plugin is **unverified**; the remote-connector fallback above covers that case.

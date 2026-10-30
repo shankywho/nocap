@@ -1,14 +1,14 @@
 # Decisions
 
 Format: `## <date time> · P<n> · <title>` with context, decision, alternatives and what was verified.
-Anything that could not be confirmed against the source is marked **UNVERIFIED** and repeated in `RUN_SUMMARY.md`.
+Anything that could not be confirmed against the source is marked **UNVERIFIED**.
 
 ## 2026-10-26 · P0 · Scope cuts for the 25-hour window
 
 - Context: the build started late (Mon 18:55 IST), leaving roughly 25 hours. The full spec is a 31-hour build with three stretch phases.
 - Decision: build P0–P10 only. Permanently cut P11 (Codex/Gemini hooks), P12 (hosted Bitecheck), P13 (GitHub Action), the `/agents` web page (the CLI `scorecard` command stays), pytest support (Jest + Vitest only; any other runner via `--test-cmd`), and PR-mode `/verify` (the curated `/api/demo` and example receipts stay).
 - Alternatives: dropping the web entirely, which would lose the landing page, receipt page and chain page that judges score; cutting Bitecheck instead, which is explicitly forbidden.
-- Verified: NOCAP_BUILD.md §16 cut order. Never-cut list stays intact: Bitecheck, repair loop + proof chain + anti-gaming, MCP tools, eval, Alan plugin, landing + receipt + chain pages.
+- Verified: the build spec's §16 cut order. Never-cut list stays intact: Bitecheck, repair loop + proof chain + anti-gaming, MCP tools, eval, Alan plugin, landing + receipt + chain pages.
 
 ## 2026-10-26 · P0 · Package manager, TypeScript and tool versions
 
@@ -147,7 +147,7 @@ Anything that could not be confirmed against the source is marked **UNVERIFIED**
 ## 2026-10-26 · P9 · Memory store only; Prisma and Playwright deferred
 
 - Context: `prisma` and `@playwright/test` are not in the offline pnpm store, so they cannot be installed here.
-- Decision: the web app talks to a `ReceiptStore` interface (`apps/web/src/server/store.ts`) with a `MemoryStore` seeded from `examples/*.json`. A Prisma implementation of the same interface (schema in NOCAP_BUILD.md §7.1) is the live-mode follow-up. Rate limits are in-memory. Integration test 10 runs the route handlers directly in Vitest; the Playwright smoke (test 11) is not written.
+- Decision: the web app talks to a `ReceiptStore` interface (`apps/web/src/server/store.ts`) with a `MemoryStore` seeded from `examples/*.json`. A Prisma implementation of the same interface (the receipt schema) is the live-mode follow-up. Rate limits are in-memory. Integration test 10 runs the route handlers directly in Vitest; the Playwright smoke (test 11) is not written.
 - Alternatives: hand-rolling a Postgres client; rejected as more code than the interface swap.
 - Verified: `apps/web/test/*.test.ts`, `next build` passes, `curl` against `next dev` for pages, SSE and OG images.
 

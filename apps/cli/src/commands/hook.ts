@@ -24,7 +24,7 @@ interface Parsed {
 }
 
 /**
- * Payload shapes are the best-known ones and UNVERIFIED against each agent's current docs (DECISIONS.md).
+ * Payload shapes are the best-known ones and UNVERIFIED against each agent's current docs (docs/decisions.md).
  * - claude: Stop hook JSON on stdin; block = {"decision":"block","reason"}.
  * - codex: `notify` runs the program with one JSON argument (type agent-turn-complete, kebab-case keys). It cannot block.
  * - gemini: AfterAgent hook JSON on stdin (prompt_response); block = {"decision":"deny","reason"}.

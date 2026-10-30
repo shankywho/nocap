@@ -1,0 +1,39 @@
+name: nocap
+description: Verify the claims in a PR description against the diff and real test runs, and comment the receipt.
+author: nocap
+branding:
+  icon: check-circle
+  color: green
+inputs:
+  github-token:
+    description: Token used to comment on the PR. Needs pull-requests write.
+    default: ${{ github.token }}
+  summary:
+    description: Agent summary to verify. Defaults to the PR description.
+    required: false
+  agent:
+    description: Agent name recorded on the receipt.
+    default: unknown
+  exec:
+    description: Run tests and Bitecheck ("true") or static checks only ("false").
+    default: "true"
+  fail-on:
+    description: Fail the step when the result is FAIL ("fail"), also on MIXED ("mixed"), or never ("never").
+    default: fail
+  llm-api-key:
+    description: Optional OpenAI-compatible API key. Without it the deterministic offline extractor is used.
+    required: false
+  llm-base-url:
+    description: Optional OpenAI-compatible base URL.
+    required: false
+  llm-model:
+    description: Optional model id.
+    required: false
+outputs:
+  overall:
+    description: PASS, FAIL or MIXED
+  receipt-id:
+    description: Receipt id
+runs:
+  using: node24
+  main: dist/index.js

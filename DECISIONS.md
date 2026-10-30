@@ -170,3 +170,9 @@ Anything that could not be confirmed against the source is marked **UNVERIFIED**
 - Decision: `runHook(io, env, agent)` parses a per-agent payload (`claude` Stop, `codex` notify JSON as argv or stdin, `gemini` AfterAgent) and shares the pipeline, saved receipts and the 2-blocks-per-session counter (keyed `agent:session`). Codex cannot block, so it only reports. Gemini denies with `{"decision":"deny","reason"}` when `NOCAP_BLOCK=1`.
 - Payload shapes are the best-known formats and are **UNVERIFIED** against each agent's current docs. `init --all` does not write these hooks; the docs page shows the manual snippet.
 - Verified: `apps/cli/test/hook.test.ts` with sample payloads.
+
+## 2026-10-26 · P13 · GitHub Action is a committed esbuild bundle
+
+- Context: `@actions/core` is not a dependency and an action should run without an install step.
+- Decision: `action/src/run.ts` reads `INPUT_*` and the event file itself, runs `verifyLocal` on the checkout (base and head SHAs from the PR event) and posts or updates one comment marked `<!-- nocap-receipt -->` through `fetch`. `pnpm build:action` bundles it to `action/dist/index.js` (committed; `.gitignore` has an exception). Fork PRs are skipped. The verifier gets a minimal env without the GitHub token; with no `llm-api-key` it runs offline.
+- Verified: `action/test/run.test.ts` with a mocked GitHub API and real fixture repos (FAIL comment, update-in-place, fork skip, failed comment, token not passed to the verifier). `runs.using: node24` is the spec's value and unverified here.

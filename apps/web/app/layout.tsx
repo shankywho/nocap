@@ -20,7 +20,11 @@ const mono = localFont({
   display: "swap",
 });
 
+// Absolute URLs for the social images: PUBLIC_BASE_URL, else the Vercel production domain, else localhost.
+const base = process.env.PUBLIC_BASE_URL ?? (process.env.VERCEL_PROJECT_PRODUCTION_URL ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}` : "http://localhost:3000");
+
 export const metadata: Metadata = {
+  metadataBase: new URL(base),
   title: "nocap: check what your coding agent says it did",
   description:
     "nocap reads your agent's final message, checks every claim against the diff and a real test run, and reverts the fix to prove new tests catch it.",

@@ -4,6 +4,7 @@ import { fileURLToPath } from "node:url";
 import { Command } from "commander";
 import { NOCAP_VERSION } from "@nocap/core";
 import { runCheck, type CheckOptions } from "./commands/check.js";
+import { runLoop } from "./commands/loop.js";
 import { runDemo } from "./commands/demo.js";
 import { runPublish } from "./commands/publish.js";
 import { runRepair } from "./commands/repair.js";
@@ -37,6 +38,7 @@ export function buildProgram(onExit: (code: number) => void = (code) => process.
     .option("--model <id>", "model id of the acting agent")
     .option("--role <name>", "role of the acting agent")
     .option("--verbose", "narrate each step")
+    .option("--chain <id|auto|new>", "continue (or start) a proof chain across attempts")
     .action(async (opts: CheckOptions) => {
       const { exitCode } = await runCheck(opts);
       onExit(exitCode);
@@ -47,6 +49,19 @@ export function buildProgram(onExit: (code: number) => void = (code) => process.
     .description("build a fixture scenario in .cache and verify it with live output")
     .option("--no-exec", "static checks only")
     .action(async (scenario: string | undefined, opts: { exec: boolean }) => onExit(await runDemo(scenario ?? "toothless", opts)));
+
+  program
+    .command("loop")
+    .description("closed repair loop: check, hand the repair packet to your agent, re-check")
+    .requiredOption("--agent-cmd <cmd>", "agent command; {repair_file} is replaced by the repair packet path")
+    .option("--summary <file|->", "initial summary (default: stdin when piped)")
+    .option("--summary-from <source>", "where the agent's next summary comes from: stdout | file:<path>", "stdout")
+    .option("--max <n>", "maximum attempts", "3")
+    .option("--no-exec", "static checks only")
+    .option("--agent <name>", "agent name for the receipts")
+    .option("--base <ref>", "base ref")
+    .option("--verbose", "narrate each step")
+    .action(async (opts) => onExit(await runLoop(opts)));
 
   program
     .command("repair [receiptFile]")

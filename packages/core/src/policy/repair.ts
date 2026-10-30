@@ -71,19 +71,40 @@ export function buildRepairPacket(
   attempt: number,
   overall: string,
   claims: { claim: Claim; verdict: Verdict }[],
+  chainItems: { key: string; quote: string; status: string }[] = [],
 ): RepairPacket {
-  const items = claims
+  const items: RepairItem[] = claims
     .filter(({ verdict }) => verdict.status === "contradicted")
     .map(({ claim, verdict }) => ({
-      key: claim.id,
+      key: chainItems.find((i) => overlapKey(i.quote, claim.quote))?.key ?? claim.id,
       quote: claim.quote,
       problem: verdict.bitecheck?.outcome ?? claim.type,
       evidence: verdict.reason,
       instruction: verdict.repair ?? repairText(claim, verdict) ?? verdict.reason,
       doneWhen: doneWhen(claim),
     }));
+  for (const item of chainItems) {
+    if (item.status !== "dropped_silently" && item.status !== "repair_by_weakening") continue;
+    if (items.some((i) => i.key === item.key)) continue;
+    items.push({
+      key: item.key,
+      quote: item.quote,
+      problem: item.status,
+      evidence:
+        item.status === "dropped_silently"
+          ? "This claim disappeared from your summary without a retraction."
+          : "The claim now looks satisfied only because tests were weakened.",
+      instruction:
+        item.status === "dropped_silently"
+          ? `Either do the work and restate "${item.quote}", or write 'Retracted: ${item.quote}' in your summary.`
+          : "Restore the removed or loosened tests, then fix the code so they pass.",
+      doneWhen: `nocap check → "${item.quote}" is verified, or retracted`,
+    });
+  }
   return { chainId, attempt, overall, items, rules: RULES };
 }
+
+const overlapKey = (a: string, b: string) => a.trim().toLowerCase() === b.trim().toLowerCase();
 
 function doneWhen(claim: Claim): string {
   switch (claim.type) {
@@ -96,7 +117,7 @@ function doneWhen(claim: Claim): string {
 }
 
 export function repairMarkdown(packet: RepairPacket): string {
-  const lines = [`# nocap repair packet (attempt ${packet.attempt}, ${packet.overall})`, ""];
+  const lines = [`# nocap repair packet (chain ${packet.chainId}, attempt ${packet.attempt}, ${packet.overall})`, ""];
   for (const item of packet.items) {
     lines.push(`## ✗ ${item.quote}`, `- Problem: ${item.problem}`, `- Evidence: ${item.evidence}`, `- Do: ${item.instruction}`, `- Done when: ${item.doneWhen}`, "");
   }

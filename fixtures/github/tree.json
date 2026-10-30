@@ -1,0 +1,1 @@
+{ "truncated": false, "paths": ["package.json", "src/retry.ts", "src/index.ts", "src/auth/session.ts", "src/auth/token.ts", "test/retry.test.ts", "test/auth.test.ts"] }

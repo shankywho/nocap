@@ -101,3 +101,31 @@ Anything that could not be confirmed against the source is marked **UNVERIFIED**
 - Decision: after resolving the default base, if it equals HEAD the engine uses `HEAD~1`. An explicit `--base` is never overridden.
 - Alternatives: requiring every caller to pass `--base` (the CLI must work with zero flags); comparing against the empty tree (would report every file as new).
 - Verified: `git.fixture.test.ts` shows the committed `honest` scenario diffing to exactly `src/retry.ts` and `test/retry.test.ts`.
+
+## 2026-10-26 · P3 · The regex extractor is a first-class path, not a stub
+
+- Context: every golden test and the entire eval run with `MOCK_EXTERNALS=true`. If the mock were a canned replay, the eval would prove nothing.
+- Decision: `MockLlm` delegates to `regexExtractor` and `keywordScope` on the actual summary, so changing a fixture summary changes the claims. The rule table from §8.3 is extended in three narrow ways needed by real agent voice: "added X to `symbol` in path" → `file_modified`, "created `path` with `symbol()`" also emits a `symbol_added` claim, and one sentence may yield a second claim per comma/then clause. Both additions are deterministic and covered by tests.
+- Alternatives: hardcoding per-scenario claims (would pass goldens while proving nothing); making the regex path lossy and relying on a key we do not have yet.
+- Verified: `regexExtractor.test.ts` asserts each pattern and all eight fixture summaries; `llmExtractor.test.ts` proves MockLlm output equals the regex extractor's output.
+
+## 2026-10-26 · P3 · Prompt text lives in code; the .md files mirror it
+
+- Context: `packages/core` is pure and cannot read files at runtime, but the spec wants `extract/prompts/*.md` as the prompt source of truth.
+- Decision: `extract/prompts.ts` holds the runtime strings (builders included); `prompts/extract.md` and `prompts/scope.md` hold the same text for humans and review. Any prompt change must touch both; the review checklist lives in `docs/ARCHITECTURE.md`.
+- Alternatives: reading the markdown through `FsPort` on every run (extra I/O and a mutable prompt at runtime); a codegen step (more moving parts than the two files justify).
+- Verified: n/a (structural decision). The rendered prompt includes the three few-shot examples §8.1 asks for.
+
+## 2026-10-26 · P3 · Quote guard normalises backticks in both directions
+
+- Context: the model is told to copy quotes verbatim, but it routinely drops backticks. Rejecting those would throw away correct claims; accepting paraphrases would let the model invent evidence.
+- Decision: match with backticks removed on both sides and whitespace collapsed via `\s+`, then map the match offsets back onto the original summary so `span` points at real text. Paraphrases still fail the substring test.
+- Alternatives: exact substring matching (drops valid model claims); fuzzy similarity (lets paraphrases through, the failure mode we are guarding against).
+- Verified: `quoteGuard.test.ts` covers kept backticked quotes, dropped paraphrases, spans and dedupe.
+
+## 2026-10-26 · P3 · Model extraction gets one repair retry, then degrades
+
+- Context: strict JSON schemas reduce but do not remove malformed replies; the receipt must never crash.
+- Decision: on any model failure, retry once with the error text appended ("Your JSON failed validation: … Return corrected JSON only."), then fall back to the deterministic extractor and set `model.degraded = true`. Provider errors are retried as well; the cost is one extra call on an outage, not a crash.
+- Alternatives: retrying only zod errors (leaves invalid JSON unhandled); retrying indefinitely (unbounded latency).
+- Verified: `llmExtractor.test.ts` covers a successful repair and the double-failure fallback.

@@ -164,7 +164,87 @@ Several tools check agent claims; none that I know of resolves which tests a giv
 
 ## Dogfooding
 
-TODO(human): "Built during OpenFire with `<agent>` on `<model>`. nocap checked N of its own summaries and caught: …"
+nocap checks its own work. The same command is run against the same range with each version, so the difference is the tool.
+
+```bash
+git clone https://github.com/shankywho/nocap && cd nocap && pnpm install
+# in the repo root, with the published tarball of the version under test:
+npx --yes ./nocap-<version>.tgz check --offline --no-hunks \
+  --base 92e05bb --head 1a294f9 \
+  --summary docs/dogfood/0.1.1-summary.md
+```
+
+`docs/dogfood/0.1.1-summary.md` is the summary of the 0.1.1 work, rebuilt from the closing message of that session (the original paste was not saved), with two sentences removed that were wrong about 0.1.1. `--offline` keeps it deterministic. `--head 1a294f9` is not the working tree, so the suite cannot run in place: it runs in a bare checkout, which is where 0.1.1 went wrong.
+
+**Before, 0.1.1:** `FAIL`, three ✗ and two flags, all false.
+
+- ✗ "Added tests for the Bitecheck stub mode…" and ✗ "Added tests for the node --test runner…": "the claimed tests fail on head". They failed only because the worktree had no workspace `node_modules` or built packages.
+- ✗ "All 301 tests pass": the report said `61/65 passed` and `36 of 65 tests fail` at the same time (two different counts), because a setup failure was counted as test failures.
+- `test config changed` on `hygiene.test.ts:8` (an import path containing "exclude") and `skip added` on `runners.nodeTest.test.ts:49` (a `test.skip(` inside a template literal).
+
+```
+NOCAP  receipt 7712f54817  ·  agent: unknown  ·  base 92e05bb → (1a294f9)
+──────────────────────────────────────────────────────────────────────────────
+! UNVERIFIABLE  "Added `config.ts` in packages/core/src/adapters"
+                'config.ts' matches several files: apps/cli/src/commands/config.ts, fixtures/project/src/config.ts, packages/core/src/adapters/config.ts.
+! UNVERIFIABLE  "Added tests for the offline banner in apps/cli/test/config.test.ts"
+                The Bitecheck could not run in this environment.
+✗ CONTRADICTED  "Added tests for the Bitecheck stub mode in packages/core/test/bitecheck.stub.test.ts"
+                The claimed tests fail on head.
+! UNVERIFIABLE  "Added tests for hygiene in packages/core/test/hygiene.test.ts"
+                The Bitecheck could not run in this environment.
+✗ CONTRADICTED  "Added tests for the node --test runner in packages/core/test/runners.nodeTest.test.ts"
+                The claimed tests fail on head.
+✗ CONTRADICTED  "All 301 tests pass"
+                61/65 passed · vitest · 9.7s
+                36 of 65 tests fail on head.
+                ! test config changed  packages/core/test/hygiene.test.ts:8  import { isAlwaysExcluded } from "../src/git/exclude";
+                ! skip added  packages/core/test/runners.nodeTest.test.ts:49  put(dir, "test/a.test.js", `import { test, describe } from "node:test";\nimport assert from "node:assert";\ndescribe("math", () => {\n  test("adds", () => assert.equal(1 + 1, 2));\n  test("breaks", () => assert.equal(1, 2));\n  test.skip("later", () => {});\n});\n`);
+──────────────────────────────────────────────────────────────────────────────
+UNDISCLOSED     packages/core/test/__golden__/denominator.noexec.json  M +1 −1   (changed, never mentioned)
+UNDISCLOSED     packages/core/test/__golden__/denominator.terminal.txt  M +1 −1   (changed, never mentioned)
+UNDISCLOSED     packages/core/test/__golden__/fake_refactor.noexec.json  M +1 −1   (changed, never mentioned)
+UNDISCLOSED     packages/core/test/__golden__/honest.noexec.json  M +1 −1   (changed, never mentioned)
+UNDISCLOSED     … (list trimmed here; the full list is in the receipt JSON)
+RESULT          FAIL · 0 verified · 3 contradicted · 3 unverifiable · 20.5s · offline
+```
+
+**After, 0.1.2:** `MIXED`, no ✗, no false flags, counts consistent.
+
+- Tests that cannot run in a bare checkout are `!` (environment), never ✗. The two tests that only fail there, because they read gitignored fixtures, are reported as depending on uncommitted files.
+- `Bumped version to 0.1.1` and `Regenerated goldens` are now checked, with the changed files as evidence, so the goldens no longer show up as UNDISCLOSED.
+- Two Bitecheck results are still `!` in this run (the offline banner tests and the `node --test` tests could not be run in the bare checkout). They stay `!` rather than guessing.
+- The remaining UNDISCLOSED files are real: the summary does not mention them.
+
+```
+NOCAP  receipt 29dfb7c868  ·  agent: unknown  ·  base 92e05bb → (1a294f9)
+──────────────────────────────────────────────────────────────────────────────
+! UNVERIFIABLE  "Added `config.ts` in packages/core/src/adapters"
+                'config.ts' matches several files: apps/cli/src/commands/config.ts, fixtures/project/src/config.ts, packages/core/src/adapters/config.ts.
+! UNVERIFIABLE  "Added tests for the offline banner in apps/cli/test/config.test.ts"
+                The Bitecheck could not run in this environment.
+✓ VERIFIED      "Added tests for the Bitecheck stub mode in packages/core/test/bitecheck.stub.test.ts"
+                BITECHECK (stub) stubbed runConfig, configFile, readConfig, writeConfigValue, resolveLlmKey, llmStatus, ensureTs, load, tsFunctions, stubTsBody, pyDefs, stubPython, tsBodies, revertTsFunction, revertPython, mutateForStub, functionNames, addedFunctions, stubFunctions, T, isStubbable, excludePathspecs, isAlwaysExcluded, undisclosedView, parseNodeTestScript, nodeTestArgs, isNodeTestScript, junitReporterMissing, runNodeTests, runFixtureGit() → 10/12 matching tests fail
+✓ VERIFIED      "Added tests for hygiene in packages/core/test/hygiene.test.ts"
+                BITECHECK (stub) stubbed runConfig, configFile, readConfig, writeConfigValue, resolveLlmKey, llmStatus, ensureTs, load, tsFunctions, stubTsBody, pyDefs, stubPython, tsBodies, revertTsFunction, revertPython, mutateForStub, functionNames, addedFunctions, stubFunctions, T, isStubbable, excludePathspecs, isAlwaysExcluded, undisclosedView, parseNodeTestScript, nodeTestArgs, isNodeTestScript, junitReporterMissing, runNodeTests, runFixtureGit() → 3/5 matching tests fail
+! UNVERIFIABLE  "Added tests for the node --test runner in packages/core/test/runners.nodeTest.test.ts"
+                The Bitecheck could not run in this environment.
+✓ VERIFIED      "Bumped version to 0.1.1"
+                apps/cli/package.json  M +1 −1
+✓ VERIFIED      "Regenerated goldens"
+                fixtures/scenarios/untracked/expected.json  M +1 −1
+! UNVERIFIABLE  "All 301 tests pass"
+                2 tests fail in a clean checkout of 1a294f9 but pass in your working tree, so they depend on uncommitted files (build output, caches, generated fixtures), not on the code under review
+──────────────────────────────────────────────────────────────────────────────
+UNDISCLOSED     packages/core/test/fixtures.git-isolation.test.ts  A +69 −0   (changed, never mentioned)
+UNDISCLOSED     packages/core/test/regexExtractor.test.ts  M +20 −0   (changed, never mentioned)
+UNDISCLOSED     packages/core/test/renderTerminal.test.ts  M +12 −0   (changed, never mentioned)
+UNDISCLOSED     packages/core/test/staticVerifiers.test.ts  M +1 −1   (changed, never mentioned)
+UNDISCLOSED     … (list trimmed here; the full list is in the receipt JSON)
+RESULT          MIXED · 4 verified · 0 contradicted · 4 unverifiable · 190.7s · offline
+```
+
+A real failure is still a ✗: `packages/core/test/monorepo.test.ts` has a case where a genuinely failing test in the working tree is reported as contradicted.
 
 ## Architecture, API, privacy, development
 

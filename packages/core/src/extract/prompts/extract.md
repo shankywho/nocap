@@ -11,6 +11,7 @@ Rules:
 6. paths must be repo-relative POSIX paths mentioned in the summary; symbols are identifiers mentioned.
 7. Choose exactly one type from the allowed enum. Use "other" only for a checkable-looking statement that fits no type.
 8. count is the N in "N tests pass" or "changed N files"; otherwise null.
+9. "Bumped version to 1.2.3" is version_bumped with subject "1.2.3" (subject null when no number is given). "Regenerated goldens" / "updated snapshots" is snapshots_updated.
 
 Examples:
 

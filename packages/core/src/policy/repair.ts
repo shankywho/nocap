@@ -46,6 +46,8 @@ export function repairText(claim: Claim, verdict: Verdict): string | null {
       return `\`${claim.command ?? "The command"}\` fails. Fix the errors and run it again before claiming it passes.`;
     case "refactor_no_behavior_change":
       return "Tests changed or the suite fails, so this was not behaviour-neutral. Revert test edits or describe the behaviour change in your summary.";
+    case "version_bumped":
+      return `${verdict.reason} Bump the version in package.json (or the project's version file) to ${claim.subject ?? "the new version"}, or remove the claim.`;
     case "bug_fixed":
       return "The test for this fix fails on your current code. Make it pass, then run nocap again.";
     default:

@@ -121,25 +121,3 @@ test("unknown receipt is a 404 page, not a crash", async ({ page }) => {
   const res = await page.goto("/r/does-not-exist");
   expect(res?.status()).toBe(404);
 });
-
-test("smooth scroll: Lenis is active, the progress rule fills, and anchors glide to their section", async ({ page }) => {
-  await page.goto("/");
-  await expect(page.locator("html")).toHaveClass(/lenis/);
-  const bar = page.locator("div.fixed.h-\\[2px\\]");
-  const scale = async () => bar.evaluate((el) => new DOMMatrix(getComputedStyle(el).transform).a);
-  expect(await scale()).toBeLessThan(0.05);
-  await page.mouse.wheel(0, 2500);
-  await expect.poll(scale, { timeout: 8000 }).toBeGreaterThan(0.1);
-  await page.locator("header").getByRole("link", { name: "Install" }).click();
-  await expect(page.getByRole("heading", { name: "Install for your agent" })).toBeInViewport({ timeout: 8000 });
-});
-
-test.describe("reduced motion", () => {
-  test.use({ reducedMotion: "reduce" });
-  test("no smooth scrolling, no reveal animation: everything is in place at once", async ({ page }) => {
-    await page.goto("/");
-    await expect(page.locator("html")).not.toHaveClass(/lenis/);
-    await page.locator("header").getByRole("link", { name: "Install" }).click();
-    await expect(page.getByRole("heading", { name: "Install for your agent" })).toBeInViewport();
-  });
-});

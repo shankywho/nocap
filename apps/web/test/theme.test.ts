@@ -64,7 +64,7 @@ describe("WCAG contrast of every text pair the page uses is at least 4.5:1", () 
 });
 
 describe("banned styles never appear in the landing files", () => {
-  const files = ["app/page.tsx", "app/globals.css", "app/layout.tsx", "src/ui/landing.tsx", "src/ui/hero.tsx", "src/ui/StreamRun.tsx", "src/ui/smooth.tsx"];
+  const files = ["app/page.tsx", "app/globals.css", "app/layout.tsx", "src/ui/landing.tsx", "src/ui/hero.tsx", "src/ui/StreamRun.tsx"];
   const text = Object.fromEntries(files.map((f) => [f, read(f)]));
   const each = (re: RegExp) => files.filter((f) => re.test(text[f] as string));
 
@@ -159,26 +159,5 @@ describe("copy and structure of the refined landing page", () => {
   it("the eval box shows the strategy table and links to the full results", () => {
     expect(page).toContain("eval/results.md");
     expect(page).toContain('split("\\n\\n")[0]');
-  });
-});
-
-describe("smooth scrolling", () => {
-  const smooth = read("src/ui/smooth.tsx");
-  const page = read("app/page.tsx");
-  it("uses Framer Motion for progress and reveals and Lenis for the easing", () => {
-    expect(smooth).toContain('from "framer-motion"');
-    expect(smooth).toContain('from "lenis"');
-    expect(smooth).toContain("useScroll");
-    expect(smooth).toContain("whileInView");
-  });
-  it("is off under prefers-reduced-motion", () => {
-    expect(smooth.match(/useReducedMotion\(\)/g)?.length).toBeGreaterThanOrEqual(2);
-    expect(smooth).toContain("if (reduced) return");
-  });
-  it("is mounted on the landing page only, and wide receipts keep native scrolling", () => {
-    expect(page).toContain("<SmoothScroll />");
-    expect(page).toContain("<ScrollProgress />");
-    expect(page).toContain("data-lenis-prevent");
-    expect(read("app/layout.tsx")).not.toContain("SmoothScroll");
   });
 });

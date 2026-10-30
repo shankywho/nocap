@@ -3,7 +3,6 @@ import { resolve } from "node:path";
 import type { Receipt } from "@nocap/core";
 import { getStore } from "../src/server/store";
 import { Hero } from "../src/ui/hero";
-import { Reveal, ScrollProgress, SmoothScroll } from "../src/ui/smooth";
 import { AgentTabs, ChainReplay, CodeBlock, Galley, Logo, Nav, PrForm, RevertDemo, type BiteCase, type GalleyData } from "../src/ui/landing";
 
 export const dynamic = "force-dynamic";
@@ -166,15 +165,13 @@ const Section = ({ n, title, tone = "wall", artifact = "right", text, children }
     <hr className="rule2" />
     <section id={`no-${n}`} className={`scroll-mt-16 ${tone === "desk" ? "bg-desk" : "bg-wall"}`}>
       <div className="mx-auto max-w-6xl px-5 py-20 sm:px-8">
-        <Reveal>
-          <header className="relative mb-10">
-            <span data-numeral aria-hidden className="mb-1 block font-heading text-[64px] leading-none text-lamp/70 xl:absolute xl:right-full xl:top-0 xl:mb-0 xl:mr-6">{n}</span>
-            <h2 className="m-0 max-w-3xl text-[34px] leading-[1.15] text-cream">{title}</h2>
-          </header>
-        </Reveal>
+        <header className="relative mb-10">
+          <span data-numeral aria-hidden className="mb-1 block font-heading text-[64px] leading-none text-lamp/70 xl:absolute xl:right-full xl:top-0 xl:mb-0 xl:mr-6">{n}</span>
+          <h2 className="m-0 max-w-3xl text-[34px] leading-[1.15] text-cream">{title}</h2>
+        </header>
         <div className={`grid items-start gap-10 ${children ? (artifact === "right" ? "lg:grid-cols-[600px_1fr]" : "lg:grid-cols-[1fr_600px]") : ""}`}>
-          <Reveal className={`flex flex-col gap-5 ${artifact === "left" && children ? "lg:order-2" : ""}`}>{text}</Reveal>
-          {children && <Reveal className={artifact === "left" ? "lg:order-1" : ""}>{children}</Reveal>}
+          <div className={`flex flex-col gap-5 ${artifact === "left" && children ? "lg:order-2" : ""}`}>{text}</div>
+          {children && <div className={artifact === "left" ? "lg:order-1" : ""}>{children}</div>}
         </div>
       </div>
     </section>
@@ -187,7 +184,7 @@ function ReceiptDoc({ file, plate }: { file: string; plate: string }) {
   const { lines, result } = receiptText(file);
   return (
     <figure className="m-0">
-      <div className="doc scrollx" data-lenis-prevent tabIndex={0} aria-label={`${plate}. Scroll sideways for the full lines.`}>
+      <div className="doc scrollx" tabIndex={0} aria-label={`${plate}. Scroll sideways for the full lines.`}>
         <pre className="m-0 whitespace-pre font-mono text-[12px] leading-[1.6]">
           {lines.map((l, i) => (
             <span key={i} title={l.trim()} className={`block ${l.startsWith("✗") ? "text-contradicted" : l.startsWith("✓") ? "text-verified" : l.startsWith("!") ? "text-unverifiable" : l.startsWith("FLAG") ? "text-unverifiable" : l.startsWith(" ") ? "text-ink-muted" : ""}`}>{l}</span>
@@ -217,8 +214,6 @@ export default async function Home() {
 
   return (
     <main>
-      <SmoothScroll />
-      <ScrollProgress />
       <Nav />
       <Hero stats={stats} />
 
@@ -360,7 +355,7 @@ export default async function Home() {
             <Lede>0.1.1 reported one false contradiction and two false flags. 0.1.2 reports no contradictions and no flags. Some claims are marked ! because the tests could not run in a bare checkout. Both receipts are printed as they came out.</Lede>
             {strategies && (
               <figure className="m-0">
-                <div className="doc scrollx" data-lenis-prevent>
+                <div className="doc scrollx">
                   <pre className="m-0 font-mono text-[13px] leading-6">{strategies}</pre>
                 </div>
                 <figcaption className="plate">Eval strategies · five planted problems · <a className="linklamp" href={`${REPO}/blob/main/eval/results.md`}>full results in eval/results.md</a></figcaption>
@@ -393,7 +388,7 @@ export default async function Home() {
         }
       >
         <figure className="m-0">
-          <div className="doc scrollx" data-lenis-prevent>
+          <div className="doc scrollx">
             <pre className="m-0 whitespace-pre font-mono text-[12px] leading-[1.6]">
               <span className="block text-unverifiable">{`! UNVERIFIABLE  "Lockfiles show as one quiet "lockfile changed" line and don't make a run MIXED"`}</span>
               <span className="block text-ink-muted">                Not a checkable claim.</span>

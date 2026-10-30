@@ -66,9 +66,22 @@ describe("version_bumped verifier", () => {
     expect((await verifyClaim(claim({ subject: "2.0.0" }), ctx([file("pyproject.toml")], [hunk("pyproject.toml", ['version = "2.0.0"'])]))).status).toBe("verified");
     expect((await verifyClaim(claim({ subject: "2.0.0" }), ctx([file("src/version.ts")], [hunk("src/version.ts", ['export const NOCAP_VERSION = "2.0.0";'])]))).status).toBe("verified");
   });
+  it("reads a minified package.json whose version sits in the middle of one line (regression: false ✗ found in the packed CLI)", async () => {
+    const line = '{"name":"p","version":"0.1.2","type":"module","scripts":{"test":"node --test"}}';
+    const c = ctx([file("package.json")], [hunk("package.json", [line], ['{"name":"p","version":"0.1.1","type":"module","scripts":{"test":"node --test"}}'])]);
+    expect((await verifyClaim(claim({ subject: "0.1.2" }), c)).status).toBe("verified");
+    expect((await verifyClaim(claim({ subject: "0.1.3" }), c)).status).toBe("contradicted");
+  });
+  it("a manifest in the diff whose version cannot be read is ! never ✗", async () => {
+    const c = ctx([file("package.json")], [hunk("package.json", ['  "private": true,'])]);
+    const v = await verifyClaim(claim({ subject: "0.1.2" }), c);
+    expect(v.status).toBe("unverifiable");
+    expect(v.reason).toContain("package.json");
+    expect((await verifyClaim(claim({ subject: "0.1.2" }), ctx([file("src/a.ts")], [hunk("src/a.ts", ["const a = 1;"])]))).status).toBe("contradicted");
+  });
   it("a dependency's version range is not the package version", async () => {
     const c = ctx([file("package.json")], [hunk("package.json", ['    "zod": "^4.1.0",'])]);
-    expect((await verifyClaim(claim({ subject: "4.1.0" }), c)).status).toBe("contradicted");
+    expect((await verifyClaim(claim({ subject: "4.1.0" }), c)).status).toBe("unverifiable"); // never ✓: a manifest changed, but not its own version
   });
   it("the version files count as covered, so they are not undisclosed", async () => {
     const x = bump("0.1.2");

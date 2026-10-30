@@ -3,8 +3,7 @@ import { resolve } from "node:path";
 import type { Receipt } from "@nocap/core";
 import { getStore } from "../src/server/store";
 import { Hero } from "../src/ui/hero";
-import { AgentTabs, CopyPill, Galley, Logo, Nav, PrForm, RevertDemo, type BiteCase, type GalleyData } from "../src/ui/landing";
-import { StreamRun } from "../src/ui/StreamRun";
+import { AgentTabs, ChainReplay, CodeBlock, Galley, Logo, Nav, PrForm, RevertDemo, type BiteCase, type GalleyData } from "../src/ui/landing";
 
 export const dynamic = "force-dynamic";
 
@@ -50,7 +49,7 @@ function galleyOf(r: Receipt): GalleyData {
   };
 }
 
-/** A receipt printed by `nocap check`, minus the rule lines and all but the first few UNDISCLOSED rows. */
+/** A receipt printed by `nocap check`, minus the rule lines and all but the first few UNDISCLOSED rows. Lines are never clipped. */
 function receiptText(file: string): { lines: string[]; result: string } {
   const lines = readRepoFile(`docs/dogfood/${file}`).split("\n").map((l) => l.replace(/\s+$/, ""));
   const keep: string[] = [];
@@ -157,36 +156,43 @@ const FAQ: [string, string][] = [
   ["What does ! mean?", "nocap could not check the claim, for example because the tests could not run in a bare checkout. It is never counted as a failure."],
 ];
 
-const Section = ({ n, title, tone = "wall", children }: { n: number; title: string; tone?: "wall" | "desk"; children: React.ReactNode }) => (
+/*
+ * A book section: the numeral hangs in the left margin (above the title on small screens), then a 600px text column
+ * beside the artifact. `artifact="left"` swaps the sides.
+ */
+const Section = ({ n, title, tone = "wall", artifact = "right", text, children }: { n: number; title: string; tone?: "wall" | "desk"; artifact?: "left" | "right"; text: React.ReactNode; children?: React.ReactNode }) => (
   <>
     <hr className="rule2" />
     <section id={`no-${n}`} className={`scroll-mt-16 ${tone === "desk" ? "bg-desk" : "bg-wall"}`}>
-      <div className="mx-auto flex max-w-6xl flex-col gap-8 px-5 py-20 sm:px-8">
-        <div>
-          <p className="label m-0">No. {n}</p>
+      <div className="mx-auto max-w-6xl px-5 py-20 sm:px-8">
+        <header className="relative mb-10">
+          <span data-numeral aria-hidden className="mb-1 block font-heading text-[64px] leading-none text-lamp/70 xl:absolute xl:right-full xl:top-0 xl:mb-0 xl:mr-6">{n}</span>
           <h2 className="m-0 max-w-3xl text-[34px] leading-[1.15] text-cream">{title}</h2>
+        </header>
+        <div className={`grid items-start gap-10 ${children ? (artifact === "right" ? "lg:grid-cols-[600px_1fr]" : "lg:grid-cols-[1fr_600px]") : ""}`}>
+          <div className={`flex flex-col gap-5 ${artifact === "left" && children ? "lg:order-2" : ""}`}>{text}</div>
+          {children && <div className={artifact === "left" ? "lg:order-1" : ""}>{children}</div>}
         </div>
-        {children}
       </div>
     </section>
   </>
 );
 
-const Lede = ({ children }: { children: React.ReactNode }) => <p className="m-0 max-w-2xl text-[17px] text-muted">{children}</p>;
+const Lede = ({ children }: { children: React.ReactNode }) => <p className="m-0 text-[17px] text-muted">{children}</p>;
 
 function ReceiptDoc({ file, plate }: { file: string; plate: string }) {
   const { lines, result } = receiptText(file);
   return (
     <figure className="m-0">
-      <div className="doc overflow-x-auto">
+      <div className="doc scrollx" tabIndex={0} aria-label={`${plate}. Scroll sideways for the full lines.`}>
         <pre className="m-0 whitespace-pre font-mono text-[12px] leading-[1.6]">
           {lines.map((l, i) => (
-            <span key={i} className={`block ${l.startsWith("✗") ? "text-contradicted" : l.startsWith("✓") ? "text-verified" : l.startsWith("!") ? "text-unverifiable" : l.startsWith("FLAG") ? "text-unverifiable" : l.startsWith(" ") ? "text-ink-muted" : ""}`}>{l.length > 150 ? `${l.slice(0, 147)}...` : l}</span>
+            <span key={i} title={l.trim()} className={`block ${l.startsWith("✗") ? "text-contradicted" : l.startsWith("✓") ? "text-verified" : l.startsWith("!") ? "text-unverifiable" : l.startsWith("FLAG") ? "text-unverifiable" : l.startsWith(" ") ? "text-ink-muted" : ""}`}>{l}</span>
           ))}
           <span className="mt-2 block font-semibold">{result}</span>
         </pre>
       </div>
-      <figcaption className="plate">{plate}</figcaption>
+      <figcaption className="plate">{plate} · scroll sideways for the full lines</figcaption>
     </figure>
   );
 }
@@ -195,18 +201,27 @@ export default async function Home() {
   const store = getStore();
   const [hero, loop1, loop2, gamed1, gamed2] = await Promise.all(["ex-toothless", "ex-toothless", "ex-loop-2", "ex-gamed-1", "ex-gamed"].map((id) => store.get(id)));
   const table = /```\n([\s\S]*?)```/.exec(readRepoFile("eval/results.md"))?.[1]?.trim() ?? "";
+  const strategies = table.split("\n\n")[0] ?? "";
   const stats = evalNumbers(table);
   const firstBad = (r: Receipt | undefined) => r?.claims.find((c) => c.verdict.status === "contradicted");
   const gamedFlags = [...(gamed2?.receipt.globalFlags ?? []).map((f) => f.rule), ...(gamed2?.receipt.chain.items ?? []).map((i) => i.status)];
+  const chain = {
+    firstQuote: firstBad(loop1?.receipt)?.claim.quote ?? "",
+    repair: firstBad(loop1?.receipt)?.verdict.repair ?? "",
+    secondSummary: loop2 ? `${loop2.receipt.totals.verified} verified, ${loop2.receipt.totals.contradicted} contradicted. Chain outcome: ${loop2.receipt.chain.outcome}.` : "",
+    chainId: loop2?.receipt.chain.chainId ?? "",
+  };
 
   return (
     <main>
       <Nav />
       <Hero stats={stats} />
 
-      <Section n={1} title="How it checks a claim">
-        <div className="grid items-start gap-10 lg:grid-cols-[0.9fr_1.1fr]">
-          <div className="space-y-6">
+      <Section
+        n={1}
+        title="How it checks a claim"
+        text={
+          <>
             <Lede>nocap splits the final message into claims, then proves or refutes each one with evidence from your repository.</Lede>
             <ol className="m-0 list-none space-y-5 p-0">
               {STEPS.map(([t, d], i) => (
@@ -219,53 +234,71 @@ export default async function Home() {
                 </li>
               ))}
             </ol>
-          </div>
-          <div>{hero ? <Galley data={galleyOf(hero.receipt)} /> : <p className="text-muted">The example receipt is unavailable.</p>}</div>
-        </div>
+          </>
+        }
+      >
+        {hero ? <Galley data={galleyOf(hero.receipt)} /> : <p className="text-muted">The example receipt is unavailable.</p>}
       </Section>
 
-      <Section n={2} title="Bitecheck: revert the fix, rerun the tests" tone="desk">
-        <Lede>nocap reverts the agent&apos;s change in a throwaway git worktree and reruns only the tests the agent added. For a new function there is nothing to revert, so nocap keeps the signature and replaces the body with return undefined. Pick an example and press the button.</Lede>
+      <Section
+        n={2}
+        title="Bitecheck: revert the fix, rerun the tests"
+        tone="desk"
+        artifact="left"
+        text={
+          <>
+            <Lede>nocap reverts the agent&apos;s change in a throwaway git worktree and reruns only the tests the agent added.</Lede>
+            <Lede>For a new function there is nothing to revert, so nocap keeps the signature and replaces the body with return undefined. If the tests still pass, they only check that the function exists.</Lede>
+            <Lede>Pick an example on the left and press the button. The first one is the case the hero button runs.</Lede>
+          </>
+        }
+      >
         <RevertDemo cases={BITE_CASES} />
       </Section>
 
-      <Section n={3} title="Repair loop">
-        <Lede>Each contradicted claim goes back to the agent as a short list of what to fix. The next attempt is checked against the same base. In the first example attempt 2 passes. In the second the agent deletes the failing test and drops the sentence, and the chain stays open.</Lede>
-        <div className="grid gap-6 lg:grid-cols-2">
-          <div className="space-y-3">
+      <Section
+        n={3}
+        title="Repair loop"
+        text={
+          <>
+            <Lede>Each contradicted claim goes back to the agent as a short list of what to fix. The next attempt is checked against the same base.</Lede>
+            <Lede>In the first chain attempt 2 passes. In the second the agent deletes the failing test and drops the sentence without retracting it, so the chain stays open and carries the flags dropped_silently and repair_by_weakening.</Lede>
+            <Lede>Both chains are stored receipts. The button replays the first one from the server, step by step, into its card.</Lede>
+          </>
+        }
+      >
+        <div className="space-y-8">
+          <div>
             <h3 className="m-0 mb-3 text-[22px] text-cream">FAIL to PASS in 2 attempts</h3>
-            <div className="doc space-y-3 font-mono text-[13px]">
-              <p className="m-0"><b className="text-contradicted">Attempt 1: ✗ FAIL</b></p>
-              <p className="m-0 text-contradicted"><span className="strike" data-on="true">{firstBad(loop1?.receipt)?.claim.quote ?? ""}</span></p>
-              <p className="m-0 text-ink-muted">{firstBad(loop1?.receipt)?.verdict.repair ?? ""}</p>
-              <hr className="m-0 border-brass" />
-              <p className="m-0"><b className="text-verified">Attempt 2: ✓ PASS</b></p>
-              <p className="m-0 text-ink-muted">{loop2 ? `${loop2.receipt.totals.verified} verified, ${loop2.receipt.totals.contradicted} contradicted. Chain outcome: ${loop2.receipt.chain.outcome}.` : ""}</p>
-            </div>
-            <p className="plate">Chain {loop2?.receipt.chain.chainId ?? ""} · <a className="linklamp" href={loop2 ? `/c/${loop2.receipt.chain.chainId}` : "#"}>open the proof chain</a></p>
+            <ChainReplay data={chain} />
           </div>
-          <div className="space-y-3">
+          <div>
             <h3 className="m-0 mb-3 text-[22px] text-cream">The gamed repair stays open</h3>
-            <div className="doc space-y-3 font-mono text-[13px]">
-              <p className="m-0"><b className="text-contradicted">Attempt 1: ✗ FAIL</b></p>
+            <div className="doc space-y-2 font-mono text-[13px]">
+              <p className="m-0 font-semibold text-contradicted">Attempt 1: ✗ FAIL</p>
               <p className="m-0 text-ink-muted">{firstBad(gamed1?.receipt)?.claim.quote ?? ""}</p>
-              <hr className="m-0 border-brass" />
-              <p className="m-0"><b className="text-contradicted">Attempt 2: ✗ FAIL</b></p>
+              <p className="m-0 font-semibold text-contradicted">Attempt 2: ✗ FAIL</p>
               <p className="m-0 text-ink-muted">The agent deleted the failing test and dropped the sentence without retracting it. Chain outcome: {gamed2?.receipt.chain.outcome ?? "unresolved"}.</p>
               <p className="m-0 text-contradicted">{[...new Set(gamedFlags)].filter((f) => /dropped|weakening/.test(f)).join(" · ")}</p>
             </div>
             <p className="plate">Deleting a test does not close the claim · <a className="linklamp" href="/r/ex-gamed">open the receipt</a></p>
           </div>
         </div>
-        <div className="max-w-2xl space-y-2">
-          <h3 className="m-0 text-[20px] text-cream">Play it live</h3>
-          <StreamRun endpoint="/api/demo/loop" label="Play the repair loop" plate="Replays the stored example chain" />
-        </div>
       </Section>
 
-      <Section n={4} title="Multi-agent handoff" tone="desk">
-        <Lede>When two agents share a task, nocap records every verdict in .nocap/ledger.jsonl with the commit and file hashes it was true for. Before the frontend agent builds on the backend agent&apos;s work, ledger_facts returns the warning. A fact goes stale when its files change.</Lede>
-        <div className="grid gap-5 md:grid-cols-3">
+      <Section
+        n={4}
+        title="Multi-agent handoff"
+        tone="desk"
+        artifact="left"
+        text={
+          <>
+            <Lede>When two agents share a task, nocap records every verdict in .nocap/ledger.jsonl with the commit and file hashes it was true for.</Lede>
+            <Lede>Before the frontend agent builds on the backend agent&apos;s work, ledger_facts returns the warning. A fact goes stale when its files change.</Lede>
+          </>
+        }
+      >
+        <div className="space-y-4">
           <figure className="m-0">
             <div className="doc font-mono text-[13px]">
               <p className="m-0 text-ink-muted">backend agent · opencode, glm-5.3-flash</p>
@@ -293,66 +326,106 @@ export default async function Home() {
         </div>
       </Section>
 
-      <Section n={5} title="Install for your agent">
-        <Lede>Run one command in your repository. It detects the agents you use and writes their hook or MCP entry. Without --write it only prints what it would change.</Lede>
-        <div className="space-y-6">
-          <CopyPill text="npx @shankywho/nocap init --all" />
-          <AgentTabs />
-          <div className="max-w-2xl space-y-3">
-            <h3 className="m-0 text-[20px] text-cream">Or check a public pull request</h3>
-            <p className="m-0 text-[16px] text-muted">PR mode is static. CI status stands in for the test run, and anything that needs execution is marked ! instead of guessed.</p>
-            <PrForm />
-          </div>
+      <Section
+        n={5}
+        title="Install for your agent"
+        text={
+          <>
+            <Lede>Run one command in your repository. It detects the agents you use and writes their hook or MCP entry. Without --write it only prints what it would change.</Lede>
+            <CodeBlock lines={[{ cmd: "npx @shankywho/nocap init --all" }]} />
+            <AgentTabs />
+          </>
+        }
+      >
+        <div className="space-y-3">
+          <h3 className="m-0 text-[22px] text-cream">Or check a public pull request</h3>
+          <p className="m-0 text-[16px] text-muted">PR mode is static. CI status stands in for the test run, and anything that needs execution is marked ! instead of guessed.</p>
+          <PrForm />
         </div>
       </Section>
 
-      <Section n={6} title="Dogfooding" tone="desk">
-        <Lede>We ran nocap on its own 0.1.1 work with the live model (gpt-oss-120b on Groq), then ran 0.1.2 on the same commit range. 0.1.1 reported one false contradiction and two false flags. 0.1.2 reports no contradictions and no flags. Some claims are marked ! because the tests could not run in a bare checkout. Both receipts are printed below as they came out.</Lede>
-        <div className="grid gap-6 lg:grid-cols-2">
+      <Section
+        n={6}
+        title="Dogfooding"
+        tone="desk"
+        artifact="left"
+        text={
+          <>
+            <Lede>We ran nocap on its own 0.1.1 work with the live model (gpt-oss-120b on Groq), then ran 0.1.2 on the same commit range.</Lede>
+            <Lede>0.1.1 reported one false contradiction and two false flags. 0.1.2 reports no contradictions and no flags. Some claims are marked ! because the tests could not run in a bare checkout. Both receipts are printed as they came out.</Lede>
+            {strategies && (
+              <figure className="m-0">
+                <div className="doc scrollx">
+                  <pre className="m-0 font-mono text-[13px] leading-6">{strategies}</pre>
+                </div>
+                <figcaption className="plate">Eval strategies · five planted problems · <a className="linklamp" href={`${REPO}/blob/main/eval/results.md`}>full results in eval/results.md</a></figcaption>
+              </figure>
+            )}
+          </>
+        }
+      >
+        <div className="space-y-8">
           <div>
             <p className="stat m-0 mb-3">1 false ✗, 2 false flags</p>
-            <ReceiptDoc file="0.1.1.receipt.txt" plate="nocap 0.1.1 · summary: the agent's own 0.1.1 closing message · base 92e05bb, head 1a294f9" />
+            <ReceiptDoc file="0.1.1.receipt.txt" plate="nocap 0.1.1 · the agent's own 0.1.1 closing message · base 92e05bb, head 1a294f9" />
           </div>
           <div>
             <p className="stat m-0 mb-3">0 ✗, 0 flags</p>
             <ReceiptDoc file="0.1.2.receipt.txt" plate="nocap 0.1.2 · same summary, same range, same model" />
           </div>
         </div>
-        {table && (
-          <figure className="m-0 max-w-3xl">
-            <div className="doc overflow-x-auto">
-              <pre className="m-0 font-mono text-[13px] leading-6">{table}</pre>
-            </div>
-            <figcaption className="plate">Eval output · five planted problems, three honest scenarios, four strategies · pnpm eval</figcaption>
-          </figure>
-        )}
       </Section>
 
-      <Section n={7} title="Limitations">
-        <ul className="m-0 max-w-3xl list-none space-y-3 p-0">
-          {LIMITS.map((l) => (
-            <li key={l} className="doc py-4 text-[16px]">{l}</li>
-          ))}
-        </ul>
+      <Section
+        n={7}
+        title="Limitations"
+        text={
+          <ul className="listrule m-0 list-none p-0">
+            {LIMITS.map((l) => (
+              <li key={l} className="py-3 text-[17px] text-cream first:pt-0">{l}</li>
+            ))}
+          </ul>
+        }
+      >
+        <figure className="m-0">
+          <div className="doc scrollx">
+            <pre className="m-0 whitespace-pre font-mono text-[12px] leading-[1.6]">
+              <span className="block text-unverifiable">{`! UNVERIFIABLE  "Lockfiles show as one quiet "lockfile changed" line and don't make a run MIXED"`}</span>
+              <span className="block text-ink-muted">                Not a checkable claim.</span>
+              <span className="block text-unverifiable">{'! UNVERIFIABLE  "Added functions are stubbed to return undefined"'}</span>
+              <span className="block text-ink-muted">                The claim names no identifier to look for.</span>
+              <span className="block text-unverifiable">{`! UNVERIFIABLE  "A test asserting only typeof mul === 'function' comes back TOOTHLESS"`}</span>
+              <span className="block text-ink-muted">                The Bitecheck could not run in this environment.</span>
+            </pre>
+          </div>
+          <figcaption className="plate">Real ! verdicts from the 0.1.2 dogfood run. A claim nocap cannot check is never called false</figcaption>
+        </figure>
       </Section>
 
-      <Section n={8} title="FAQ" tone="desk">
-        <dl className="m-0 grid gap-5 md:grid-cols-2">
-          {FAQ.map(([q, a]) => (
-            <div key={q} className="doc">
-              <dt className="font-heading text-[20px] font-bold">{q}</dt>
-              <dd className="m-0 mt-2 text-[16px] text-ink-muted">{a}</dd>
-            </div>
-          ))}
-        </dl>
-      </Section>
+      <hr className="rule2" />
+      <section id="no-8" className="scroll-mt-16 bg-desk">
+        <div className="mx-auto max-w-6xl px-5 py-20 sm:px-8">
+          <header className="relative mb-10">
+            <span data-numeral aria-hidden className="mb-1 block font-heading text-[64px] leading-none text-lamp/70 xl:absolute xl:right-full xl:top-0 xl:mb-0 xl:mr-6">8</span>
+            <h2 className="m-0 max-w-3xl text-[34px] leading-[1.15] text-cream">FAQ</h2>
+          </header>
+          <div className="listrule max-w-3xl">
+            {FAQ.map(([q, a]) => (
+              <details key={q} className="py-4 first:pt-0">
+                <summary className="cursor-pointer font-heading text-[22px] leading-snug text-cream">{q}</summary>
+                <p className="m-0 mt-2 text-[17px] text-muted">{a}</p>
+              </details>
+            ))}
+          </div>
+        </div>
+      </section>
 
       <footer className="border-t border-brass bg-desk">
         <div className="mx-auto flex max-w-6xl flex-wrap items-start justify-between gap-6 px-5 py-10 sm:px-8">
           <div className="space-y-2 text-cream">
             <Logo size={20} />
             <p className="m-0 text-[15px] text-muted">Built for #OpenFire by @shankywho · MIT</p>
-            <p className="m-0 max-w-md font-mono text-[12px] leading-snug text-muted">Hero: After Thomas Eakins, The Chess Players (1876), The Metropolitan Museum of Art, public domain. Canvas extended for this page.</p>
+            <p className="m-0 max-w-md text-[13px] leading-snug text-muted">Hero: After Thomas Eakins, The Chess Players (1876), The Metropolitan Museum of Art, public domain. Canvas extended for this page.</p>
           </div>
           <nav className="flex gap-6 text-[16px]" aria-label="Footer">
             <a className="linklamp" href={REPO}>GitHub</a>

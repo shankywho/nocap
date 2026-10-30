@@ -24,18 +24,52 @@ test("landing: the hero painting is the largest contentful paint and the headlin
   await expect(page.getByText("After Thomas Eakins, The Chess Players (1876)").first()).toBeVisible();
 });
 
-test("landing: the nav turns solid after the hero", async ({ page }) => {
+test("landing: the nav has Install and GitHub, and turns solid after the hero", async ({ page }) => {
   await page.goto("/");
   const header = page.locator("header").first();
+  await expect(header.getByRole("link", { name: "Install" })).toBeVisible();
+  await expect(header.getByRole("link", { name: "GitHub" })).toBeVisible();
+  await expect(page.getByText("Try the demo")).toHaveCount(0);
   await expect(header).toHaveClass(/bg-transparent/);
   await page.mouse.wheel(0, 1400);
   await expect(header).toHaveClass(/bg-wall/);
 });
 
-test("landing: sections are numbered No. 1 to No. 8 in order", async ({ page }) => {
+test("landing: Install in the nav scrolls to the install section", async ({ page }) => {
   await page.goto("/");
-  const labels = await page.locator("p.label").allInnerTexts();
-  expect(labels).toEqual(["No. 1", "No. 2", "No. 3", "No. 4", "No. 5", "No. 6", "No. 7", "No. 8"]);
+  await page.locator("header").getByRole("link", { name: "Install" }).click();
+  await expect(page).toHaveURL(/#no-5/);
+  await expect(page.getByRole("heading", { name: "Install for your agent" })).toBeInViewport();
+});
+
+test("landing: hanging numerals 1 to 8 in order, and the hero install block shows real usage", async ({ page }) => {
+  await page.goto("/");
+  expect(await page.locator("[data-numeral]").allInnerTexts()).toEqual(["1", "2", "3", "4", "5", "6", "7", "8"]);
+  const hero = page.locator("section").first();
+  await expect(hero.getByText("npx @shankywho/nocap init --all")).toBeVisible();
+  await expect(hero.getByText("npx @shankywho/nocap check")).toBeVisible();
+  await expect(hero.getByText("Want to see it first?")).toBeVisible();
+});
+
+test("hero button runs the Bitecheck example and shows the verdict", async ({ page }) => {
+  await page.goto("/");
+  await page.getByRole("button", { name: "See it catch a bad test" }).click();
+  await expect(page.getByText("✗ toothless.")).toBeVisible();
+});
+
+test("FAQ answers collapse and expand", async ({ page }) => {
+  await page.goto("/#no-8");
+  const first = page.locator("details").first();
+  await expect(first).not.toHaveAttribute("open", "");
+  await first.locator("summary").click();
+  await expect(first).toHaveAttribute("open", "");
+});
+
+test("dogfood receipts are not clipped: the full first line is in the page", async ({ page }) => {
+  await page.goto("/#no-6");
+  const text = await page.locator("#no-6 pre", { hasText: "receipt c735f1da69" }).innerText();
+  expect(text).toContain("All six fixes are done and pushed to `origin/main`, with small commits and a test for each");
+  expect(text).not.toContain("...");
 });
 
 test("Bitecheck demo: revert shows toothless; a stubbed new function shows bites (stub)", async ({ page }) => {
@@ -66,12 +100,15 @@ test("the demo PR streams steps and ends on a receipt with a ✗", async ({ page
   await expect(page.getByText("CONTRADICTED").first()).toBeVisible();
 });
 
-test("the repair loop plays FAIL then PASS from the landing page", async ({ page }) => {
+test("Replay this chain streams the stored chain into its own card, FAIL then PASS", async ({ page }) => {
   await page.goto("/#no-3");
-  await page.getByRole("button", { name: "Play the repair loop" }).click();
-  await expect(page.getByText("ATTEMPT 1: FAIL")).toBeVisible({ timeout: 30_000 });
-  await expect(page.getByText("ATTEMPT 2: PASS")).toBeVisible({ timeout: 30_000 });
-  await expect(page.locator("[aria-live=polite]").first().getByRole("link", { name: /open the receipt/ })).toBeVisible();
+  const card = page.locator("[aria-live=polite]").first();
+  await expect(card).toContainText("Attempt 2: ✓ PASS"); // the final state is shown before any replay
+  await page.getByRole("button", { name: "Replay this chain" }).click();
+  await expect(card).toContainText("Attempt 1: ✗ FAIL", { timeout: 30_000 });
+  await expect(card).toContainText("Repair packet:", { timeout: 30_000 });
+  await expect(card).toContainText("Attempt 2: ✓ PASS", { timeout: 30_000 });
+  await expect(card).toContainText("Chain outcome: resolved", { timeout: 30_000 });
 });
 
 test("install tabs switch agents and show the init command", async ({ page }) => {

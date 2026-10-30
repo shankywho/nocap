@@ -240,3 +240,11 @@ Anything that could not be confirmed against the source is marked **UNVERIFIED**
   - Chrome ignores an image that covers the whole viewport as a background. At 1440x900 the hero is shorter than the viewport and the LCP element is the hero webp; on shorter or narrower viewports the headline is the LCP element. The Playwright LCP check runs at 1440x900. Lighthouse reports the hero image as the LCP element in both desktop and mobile runs.
   - Credit and source are in `hero.tsx` and the README. I did not cite a Met object URL because I could not confirm the object number.
 - Verified: Lighthouse (production build, Chrome 1xx): desktop 100 / 100 / 100 / 100, mobile 92 / 100 / 100 / 100 (performance, accessibility, best practices, SEO). Full-page screenshots are `docs/media/landing-1440.png` and `landing-390.png`.
+
+## 2026-10-27 · Web · Landing refinements (book layout)
+
+- Layout: hanging section numerals (Old Standard TT 64px, lamp at 70%) sit in the left margin from the `xl` breakpoint and above the title below it; each section is a 600px text column beside its artifact, alternating sides. Cream documents are used only for artifacts (receipts, code, terminal output, the Galley, the Bitecheck demo, the ledger). Limitations and the FAQ are plain lists on the wall (the FAQ uses `<details>`).
+- Hero: the primary action runs the first Bitecheck example (a `nocap:bitecheck` event the demo listens for). On phones the painting is a 240px band above the text (object-position 72% 40%).
+- Stats: only measured numbers. The "< $0.01 per check" line was removed: receipts do not record token usage, so there is nothing to compute it from. The figure in the README is an estimate from list prices.
+- Dogfood receipts are shown in full (white-space: pre, a visible scrollbar, a caption hint, each line also in a `title`). A fade hint would need a gradient, which is banned.
+- Verified: Playwright (13), theme tests (33), Lighthouse on the production build: desktop 100 / 100 / 100 / 100, mobile 92 / 100 / 100 / 100.

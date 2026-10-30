@@ -193,7 +193,7 @@
       "step": "resolve",
       "ms": 0,
       "status": "ok",
-      "detail": "3be732b..69d489c"
+      "detail": "BASE..HEAD"
     },
     {
       "step": "diff",

@@ -1,7 +1,8 @@
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { mkdir, readFile, writeFile } from "node:fs/promises";
-import { beforeAll, describe, expect, it } from "vitest";
+import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { buildFixtures, SCENARIOS } from "../../../scripts/build-fixtures";
 import { ExecaExec, FixedClock, MemoryLogger, NodeFs, SimpleGitPort } from "@nocap/core/adapters";
 import { MockLlm } from "../src/adapters/llm.mock";
@@ -9,8 +10,10 @@ import { verify } from "../src/pipeline";
 
 const root = fileURLToPath(new URL("../../..", import.meta.url));
 
+let cacheDir = "";
+
 async function run(name: string) {
-  const repoPath = join(root, ".cache", "fixtures", name);
+  const repoPath = join(cacheDir, name);
   const summary = await readFile(join(root, "fixtures", "scenarios", name, "summary.md"), "utf8");
   const clock = new FixedClock();
   return verify({
@@ -26,8 +29,13 @@ async function run(name: string) {
 
 describe("pipeline --no-exec", () => {
   beforeAll(async () => {
-    await buildFixtures({ quiet: true });
+    cacheDir = await mkdtemp(join(tmpdir(), "nocap-noexec-"));
+    await buildFixtures({ quiet: true, cacheDir });
   }, 120_000);
+
+  afterAll(async () => {
+    await rm(cacheDir, { recursive: true, force: true });
+  });
 
   it.each(SCENARIOS)("%s matches expected statuses without exec", async (name) => {
     const expected = JSON.parse(await readFile(join(root, "fixtures", "scenarios", name, "expected.json"), "utf8"));
@@ -35,7 +43,7 @@ describe("pipeline --no-exec", () => {
     const got = receipt.claims.map((c) => ({ type: c.claim.type, status: c.verdict.status }));
     const goldenPath = join(root, "packages", "core", "test", "__golden__", `${name}.noexec.json`);
     const normalised = JSON.stringify(
-      { ...receipt, id: "ID", runId: "RUN", createdAt: "T", durationMs: 0, trace: receipt.trace.map((t) => ({ ...t, ms: 0 })),
+      { ...receipt, id: "ID", runId: "RUN", createdAt: "T", durationMs: 0, trace: receipt.trace.map((t) => ({ ...t, ms: 0, detail: t.detail.replace(/[0-9a-f]{7}\.\.[0-9a-f]{7}/, "BASE..HEAD") })),
         input: { ...receipt.input, base: "BASE", head: "HEAD" } },
       null, 2,
     ) + "\n";

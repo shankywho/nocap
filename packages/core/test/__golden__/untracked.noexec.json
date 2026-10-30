@@ -178,7 +178,7 @@
       "step": "resolve",
       "ms": 0,
       "status": "ok",
-      "detail": "3be732b..a078af6 (snapshot)"
+      "detail": "BASE..HEAD (snapshot)"
     },
     {
       "step": "diff",

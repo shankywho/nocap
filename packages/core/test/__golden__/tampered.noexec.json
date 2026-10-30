@@ -140,7 +140,7 @@
       "step": "resolve",
       "ms": 0,
       "status": "ok",
-      "detail": "3be732b..e884777"
+      "detail": "BASE..HEAD"
     },
     {
       "step": "diff",

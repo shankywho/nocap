@@ -1,0 +1,52 @@
+generator client { provider = "prisma-client-js" }
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+enum ReceiptSource { CLI PR MCP HOOK DEMO }
+enum Overall { PASS FAIL MIXED }
+
+model Receipt {
+  id                String        @id            // nanoid(10), URL-safe
+  createdAt         DateTime      @default(now())
+  schemaVersion     Int           @default(1)
+  source            ReceiptSource
+  agent             String?                      // claude-code | opencode | alan-code | cursor | codex | antigravity | unknown
+  repo              String?                      // "owner/name" (null for local/private)
+  prNumber          Int?
+  baseSha           String?
+  headSha           String?
+  overall           Overall
+  verifiedCount     Int
+  contradictedCount Int
+  unverifiableCount Int
+  flagCount         Int           @default(0)
+  headline          String                       // ≤140 chars: first ✗ quote, else "N claims verified"
+  modelLabel        String?                      // "gpt-oss-120b@groq" | "offline"
+  payload           Json                         // full Receipt JSON (validated with ReceiptSchema)
+  deleteTokenHash   String
+  isExample         Boolean       @default(false)
+  chainId           String                       // proof chain (§8.7)
+  parentId          String?                      // previous attempt's receipt id
+  attempt           Int           @default(1)
+  actorRole         String?                      // multi-agent role (§8.8)
+  @@index([createdAt])
+  @@index([isExample, createdAt])
+  @@index([chainId, attempt])
+  @@index([agent, modelLabel])
+}
+
+model GithubCache {
+  key       String   @id
+  value     Json
+  expiresAt DateTime
+  @@index([expiresAt])
+}
+
+model RateLimit {
+  key         String   @id                       // "<route>:<ipHash>:<hourBucket>"
+  count       Int      @default(0)
+  expiresAt   DateTime
+}

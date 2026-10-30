@@ -13,6 +13,9 @@ import { mapScope } from "../extract/scopeMapper.js";
 import { readChangeSet } from "../git/diff.js";
 import { resolveRefs } from "../git/resolve.js";
 import { FsChainStore } from "../loop/chain.js";
+import { entriesFromReceipt, Ledger, trackedPaths } from "../ledger/ledger.js";
+import { check as ledgerCheck, facts as ledgerFacts, renderFacts, type Answer } from "../ledger/query.js";
+import { aggregate, type ScoreRow } from "../scorecard/aggregate.js";
 import { verify, type VerifyOutput } from "../pipeline.js";
 import type { LlmPort, VerifyConfig } from "../ports.js";
 import { renderMarkdown } from "../render/markdown.js";
@@ -175,6 +178,10 @@ export interface LocalVerifyOptions {
   testCommand?: string | undefined;
   testFormat?: "jest" | "junit" | undefined;
   chain?: string | undefined;
+  /** Judge only the delta since the previous receipt in this repo (per-agent attribution). */
+  sinceLast?: boolean | undefined;
+  /** `role=glob,glob` declarations of other roles' scopes. */
+  scopeRole?: string[] | undefined;
   events?: NocapEvents | undefined;
   llm?: LlmPort | undefined;
   save?: boolean | undefined;
@@ -190,19 +197,19 @@ export async function verifyLocal(opts: LocalVerifyOptions, env: Env): Promise<L
   const offline = opts.offline === true || envFlag(env.NOCAP_OFFLINE);
   const execEnabled = opts.exec !== false;
   const timeoutMs = Number(env.NOCAP_TEST_TIMEOUT_MS ?? 120_000);
-  const agent = opts.agent ?? opts.actor ?? "agent";
+  const agent = opts.agent ?? opts.actor ?? env.NOCAP_ACTOR ?? "unknown";
   const taskId = env.ALAN_TASK_ID ?? null;
   const config: VerifyConfig = {
     repoPath,
     exec: execEnabled,
     offline,
-    actor: opts.actor ?? agent,
-    model: opts.model ?? null,
-    role: opts.role ?? null,
+    actor: opts.actor ?? env.NOCAP_ACTOR ?? agent,
+    model: opts.model ?? env.NOCAP_MODEL ?? null,
+    role: opts.role ?? env.NOCAP_ROLE ?? null,
     agent,
     testTimeoutMs: timeoutMs,
     scopeOverrides: parseScopeFlags(opts.scope ?? []),
-    roleScopes: rc.roleScopes,
+    roleScopes: { ...rc.roleScopes, ...parseScopeFlags(opts.scopeRole ?? []) },
     userScope: rc.scope,
     alan: taskId || env.ALAN_SESSION_ID ? { taskId, sessionId: env.ALAN_SESSION_ID ?? null } : null,
     testCommand: opts.testCommand ?? rc.testCommand,
@@ -222,15 +229,22 @@ export async function verifyLocal(opts: LocalVerifyOptions, env: Env): Promise<L
       })
     : undefined;
 
+  let base = opts.base;
+  if (!base && opts.sinceLast) {
+    const previous = await latestReceiptFile(repoPath).then((f) => (f ? loadReceipt(f) : null)).catch(() => null);
+    if (previous) base = previous.input.head;
+  }
+
   const output = await verify({
     config, summary: opts.summary, runId, events,
-    ...(opts.base ? { base: opts.base } : {}),
+    ...(base ? { base } : {}),
     ...(opts.head ? { head: opts.head } : {}),
     deps: { git, exec, fs, llm: opts.llm ?? makeLlm(env, offline), clock: new SystemClock(), logger: new ConsoleLogger("warn") },
     ...(stage ? { execStage: stage } : {}),
     ...(opts.chain ? { chain: { id: opts.chain, store: new FsChainStore(fs, `${repoPath}/.nocap/chains`) } } : {}),
   });
   const savedTo = opts.save === false ? null : await saveReceipt(repoPath, output.receipt).catch(() => null);
+  if (opts.save !== false) await recordInLedger(repoPath, output.receipt, git, fs).catch(() => undefined);
   return { ...output, savedTo };
 }
 
@@ -276,4 +290,34 @@ export async function checkScopeLocal(
     concept: mapping.concept, globs: mapping.globs, mappedFiles: mapping.matchedFiles,
     touched: touched.map((f) => ({ path: f.path, status: f.status, additions: f.additions, deletions: f.deletions })),
   };
+}
+
+/* ─── ledger, handoff, scorecard ──────────────────────────────────────── */
+
+const ledgerFile = (repoPath: string) => `${repoPath}/.nocap/ledger.jsonl`;
+
+async function recordInLedger(repoPath: string, receipt: Receipt, git: SimpleGitPort, fs: NodeFs): Promise<void> {
+  const parent = await git.raw(["rev-parse", `${receipt.input.head}^`], { cwd: repoPath });
+  const anchorSha = receipt.input.headIsSnapshot && parent.exitCode === 0 ? parent.stdout.trim() : receipt.input.head;
+  const blobMap = new Map<string, string | null>();
+  const paths = [...new Set(receipt.claims.flatMap((_, i) => trackedPaths(receipt, i)))];
+  for (const p of paths) {
+    const r = await git.raw(["rev-parse", `${receipt.input.head}:${p}`], { cwd: repoPath });
+    blobMap.set(p, r.exitCode === 0 ? r.stdout.trim() : null);
+  }
+  const entries = entriesFromReceipt(receipt, anchorSha, (ps) => Object.fromEntries(ps.map((p) => [p, blobMap.get(p) ?? null])));
+  await new Ledger(fs, ledgerFile(repoPath)).append(entries);
+}
+
+export async function ledgerFactsLocal(opts: { repoPath: string; query?: string | undefined }): Promise<{ markdown: string; trusted: number; warnings: number; stale: number }> {
+  const f = await ledgerFacts(new Ledger(new NodeFs(), ledgerFile(opts.repoPath)), new SimpleGitPort(opts.repoPath), opts.repoPath, opts.query);
+  return { markdown: renderFacts(f), trusted: f.trusted.length, warnings: f.warnings.length, stale: f.stale.length };
+}
+
+export async function ledgerCheckLocal(opts: { repoPath: string; statement: string }): Promise<Answer[]> {
+  return ledgerCheck(new Ledger(new NodeFs(), ledgerFile(opts.repoPath)), new SimpleGitPort(opts.repoPath), opts.repoPath, opts.statement);
+}
+
+export async function scorecardLocal(repoPath: string): Promise<ScoreRow[]> {
+  return aggregate(await Promise.all((await listReceiptFiles(repoPath)).map(loadReceipt)));
 }

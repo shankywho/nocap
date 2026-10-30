@@ -9,6 +9,7 @@ import { readStdinText, runHook } from "./commands/hook.js";
 import { runInitClaude } from "./commands/init.js";
 import { runInitAll } from "./commands/initAll.js";
 import { runLoop } from "./commands/loop.js";
+import { runHandoff, runScorecard } from "./commands/team.js";
 import { runBitecheck, runChain } from "./commands/chain.js";
 import { runDemo } from "./commands/demo.js";
 import { runPublish } from "./commands/publish.js";
@@ -44,6 +45,8 @@ export function buildProgram(onExit: (code: number) => void = (code) => process.
     .option("--role <name>", "role of the acting agent")
     .option("--verbose", "narrate each step")
     .option("--chain <id|auto|new>", "continue (or start) a proof chain across attempts")
+    .option("--since-last", "judge only the delta since the previous receipt (per-agent attribution)")
+    .option("--scope-role <role=globs>", "declare another role's scope (repeatable); touching it raises cross_agent_overlap", collect, [] as string[])
     .action(async (opts: CheckOptions) => {
       const { exitCode } = await runCheck(opts);
       onExit(exitCode);
@@ -113,6 +116,17 @@ export function buildProgram(onExit: (code: number) => void = (code) => process.
     .command("chain [chainId]")
     .description("print the proof-chain timeline (default: the latest chain)")
     .action(async (chainId: string | undefined) => onExit(await runChain(chainId)));
+
+  program
+    .command("handoff")
+    .description("what the next agent can trust, must not rely on, and what is stale (from the ledger)")
+    .option("--to <role>", "role of the agent receiving the work")
+    .action(async (opts: { to?: string }) => onExit(await runHandoff(opts.to)));
+
+  program
+    .command("scorecard")
+    .description("per agent+model accuracy from local receipts")
+    .action(async () => onExit(await runScorecard()));
 
   program
     .command("repair [receiptFile]")

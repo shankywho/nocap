@@ -11,7 +11,7 @@ import { CACHE, ROOT, runScenario } from "./lib/run-scenario";
 import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { FsChainStore, repairMarkdown, runLoop, type Receipt } from "@nocap/core";
-import { NodeFs } from "@nocap/core/adapters";
+import { ledgerFactsLocal, NodeFs, verifyLocal } from "@nocap/core/adapters";
 
 const run = promisify(execFile);
 
@@ -91,6 +91,28 @@ async function repairLoopEval(): Promise<{ lines: string[]; failures: string[] }
   return { lines, failures };
 }
 
+async function handoffEval(): Promise<{ line: string; failures: string[] }> {
+  const tmp = await mkdtemp(join(tmpdir(), "nocap-evalhand-"));
+  try {
+    await buildFixtures({ quiet: true, cacheDir: tmp, scenarios: ["handoff"] });
+    const repo = join(tmp, "handoff");
+    const meta = JSON.parse(await readFile(join(tmp, "handoff.json"), "utf8")) as { baseSha: string; stages: Record<string, string> };
+    const env = { PATH: process.env.PATH ?? "", HOME: process.env.HOME ?? "", MOCK_EXTERNALS: "true" };
+    const stage = (n: string) => readFile(join(ROOT, "fixtures", "scenarios", "handoff", "stages", n, "summary.md"), "utf8");
+    await verifyLocal({ repoPath: repo, summary: await stage("01-backend"), base: meta.baseSha, head: meta.stages["01-backend"], actor: "opencode", model: "glm-5.3-flash", role: "backend" }, env);
+    const facts = await ledgerFactsLocal({ repoPath: repo, query: "computeDelay" });
+    const surfaced = facts.warnings > 0 && /CONTRADICTED/.test(facts.markdown);
+    const b = await verifyLocal({ repoPath: repo, summary: await stage("02-frontend"), sinceLast: true, exec: false, actor: "opencode", model: "deepseek-v4.1-flash", role: "frontend" }, env);
+    let errors = 0;
+    if (b.receipt.undisclosed.some((e) => e.kind === "file" && e.path === "src/backoff.ts")) errors++;
+    if (b.receipt.claims.some((c) => c.verdict.status === "contradicted")) errors++;
+    const line = `${pad("multi-agent handoff", 32)} A's false claim surfaced to B via ledger: ${surfaced ? "yes" : "no"} · attribution errors: ${errors}`;
+    return { line, failures: surfaced && errors === 0 ? [] : [`handoff: surfaced=${surfaced}, attribution errors=${errors}`] };
+  } finally {
+    await rm(tmp, { recursive: true, force: true });
+  }
+}
+
 async function main() {
   console.log("building fixtures...");
   await buildFixtures({ quiet: true });
@@ -131,7 +153,9 @@ async function main() {
   console.log("running the repair-loop eval (scripted agent)...");
   const loopEval = await repairLoopEval();
   console.log(`\n${loopEval.lines.join("\n")}\n`);
-  const tail = `<!-- extra-evals -->\n\n\`\`\`\n${loopEval.lines.join("\n")}\n\`\`\`\n\nThe agent here is scripted: it applies the \`repair/\` overlay of each fixture scenario.\n`;
+  const handoff = await handoffEval();
+  console.log(`${handoff.line}\n`);
+  const tail = `<!-- extra-evals -->\n\n\`\`\`\n${[...loopEval.lines, handoff.line].join("\n")}\n\`\`\`\n\nThe agent here is scripted: it applies the \`repair/\` overlay of each fixture scenario.\n`;
   await writeFile(resultsFile, `# nocap eval\n\nB1 runs the fixture suite on head; B2 is \`--no-exec\`; B3 is the full pipeline. Planted lies: ${LIES.join(", ")}. Honest scenarios: ${HONEST.join(", ")}.\n\n\`\`\`\n${lines.join("\n")}\n\`\`\`\n\n${tail}`);
 
   const b3 = rows[3];
@@ -139,7 +163,7 @@ async function main() {
   if (b3[1] < 5) failures.push(`B3 caught ${b3[1]}/5 planted lies`);
   if (b3[2] > 0) failures.push(`B3 made ${b3[2]} false accusation(s)`);
   if (rows[2][2] > 0) failures.push("B2 made a false accusation");
-  failures.push(...loopEval.failures);
+  failures.push(...loopEval.failures, ...handoff.failures);
   if (failures.length > 0) {
     console.error(`EVAL FAILED: ${failures.join("; ")}`);
     process.exit(1);

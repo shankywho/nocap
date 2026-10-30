@@ -120,37 +120,47 @@ export async function buildFixtures(opts: BuildFixtureOptions = {}): Promise<Bui
     await git(dest, ["commit", "-q", "-m", "base"]);
     const baseSha = (await git(dest, ["rev-parse", "HEAD"])).trim();
 
-    const overlay = join(scenarioDir, "overlay");
-    for (const file of await listFiles(overlay)) {
-      const target = join(dest, relative(overlay, file));
-      await mkdir(dirname(target), { recursive: true });
-      await cp(file, target);
-    }
-
-    const deleteFile = join(scenarioDir, "delete.txt");
-    try {
-      const list = await readFile(deleteFile, "utf8");
-      for (const line of list.split("\n")) {
-        const path = line.trim();
-        if (path) await rm(join(dest, path), { force: true });
+    const apply = async (dir: string) => {
+      const overlay = join(dir, "overlay");
+      for (const file of await listFiles(overlay).catch(() => [] as string[])) {
+        const target = join(dest, relative(overlay, file));
+        await mkdir(dirname(target), { recursive: true });
+        await cp(file, target);
       }
-    } catch {
-      // no delete.txt for this scenario
-    }
+      try {
+        for (const line of (await readFile(join(dir, "delete.txt"), "utf8")).split("\n")) {
+          const path = line.trim();
+          if (path) await rm(join(dest, path), { force: true });
+        }
+      } catch {
+        // no delete.txt
+      }
+    };
 
-    const mode = (await readFile(join(scenarioDir, "mode.txt"), "utf8")).trim();
-    let headSha = baseSha;
-    if (mode === "commit") {
+    // Multi-agent scenarios: one commit per stage (stages/<nn-name>/{overlay,delete.txt,summary.md}).
+    const stageNames = (await readdir(join(scenarioDir, "stages")).catch(() => [] as string[])).sort();
+    const stageShas: Record<string, string> = {};
+    for (const stage of stageNames) {
+      await apply(join(scenarioDir, "stages", stage));
+      await git(dest, ["add", "-A"]);
+      await git(dest, ["commit", "-q", "-m", `stage ${stage}`], FIXED_DATE_AGENT);
+      stageShas[stage] = (await git(dest, ["rev-parse", "HEAD"])).trim();
+    }
+    if (stageNames.length === 0) await apply(scenarioDir);
+
+    const mode = stageNames.length > 0 ? "commit" : (await readFile(join(scenarioDir, "mode.txt"), "utf8")).trim();
+    let headSha = stageNames.length > 0 ? (stageShas[stageNames[stageNames.length - 1] as string] as string) : baseSha;
+    if (mode === "commit" && stageNames.length === 0) {
       await git(dest, ["add", "-A"]);
       await git(dest, ["commit", "-q", "-m", "agent change"], FIXED_DATE_AGENT);
       headSha = (await git(dest, ["rev-parse", "HEAD"])).trim();
-    } else if (mode !== "worktree") {
+    } else if (mode !== "worktree" && mode !== "commit") {
       throw new Error(`scenario ${name}: unknown mode "${mode}"`);
     }
 
     await writeFile(
       join(cache, `${name}.json`),
-      `${JSON.stringify({ name, baseSha, headSha, mode }, null, 2)}\n`,
+      `${JSON.stringify({ name, baseSha, headSha, mode, ...(stageNames.length > 0 ? { stages: stageShas } : {}) }, null, 2)}\n`,
       "utf8",
     );
 

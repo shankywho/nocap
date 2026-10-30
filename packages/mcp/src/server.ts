@@ -32,6 +32,7 @@ export function createServer(env: Env = process.env): McpServer {
         actor: z.string().optional().describe("Your agent name"),
         model: z.string().optional(),
         role: z.string().optional().describe("Your role on a multi-agent task, e.g. backend"),
+        since_last: z.boolean().optional().describe("Judge only the delta since the previous receipt, so you are not blamed for a teammate's files"),
       },
     },
     (args) => tools.verifyClaims(args, env),
@@ -62,6 +63,33 @@ export function createServer(env: Env = process.env): McpServer {
       inputSchema: { repo_path: repo, concept: z.string(), base },
     },
     (args) => tools.checkScope(args, env),
+  );
+
+  server.registerTool(
+    "ledger_facts",
+    {
+      description: "Call this at the START of a task, before relying on anything another agent said. Returns trusted facts (verified and still current), warnings (claims contradicted by evidence) and stale facts (the code changed since).",
+      inputSchema: { repo_path: repo, query: z.string().optional().describe("Keywords of your task, e.g. 'backoff computeDelay'") },
+    },
+    (args) => tools.ledgerFacts(args),
+  );
+
+  server.registerTool(
+    "ledger_check",
+    {
+      description: "A teammate said X. Is it proven? Extracts the claims from the statement and answers each from the ledger: verified by <actor>, CONTRADICTED by evidence, or unverified.",
+      inputSchema: { repo_path: repo, statement: z.string() },
+    },
+    (args) => tools.ledgerCheck(args),
+  );
+
+  server.registerTool(
+    "scorecard",
+    {
+      description: "Accuracy table per agent and model on this repo: verified, contradicted and unverifiable claim rates, bite rate, repair success, silent drops.",
+      inputSchema: { repo_path: repo },
+    },
+    (args) => tools.scorecard(args),
   );
 
   return server;

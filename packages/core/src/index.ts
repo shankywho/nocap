@@ -18,3 +18,6 @@ export { advanceChain, itemKey } from "./loop/antiGaming.js";
 export { computeChainId, FsChainStore, MemoryChainStore, type ChainStore } from "./loop/chain.js";
 export { runLoop, type LoopDeps, type LoopResult, type StopReason } from "./loop/driver.js";
 export { parseRetractions, overlap, normaliseQuote } from "./loop/text.js";
+export { Ledger, factKey, entriesFromReceipt, type LedgerEntry } from "./ledger/ledger.js";
+export { facts as ledgerFacts, check as ledgerCheck, renderFacts, isStale, type Facts, type Answer } from "./ledger/query.js";
+export { aggregate, renderScorecard, SCORECARD_CAPTION, type ScoreRow } from "./scorecard/aggregate.js";

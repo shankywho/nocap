@@ -1,4 +1,5 @@
 import type { ParsedRun } from "./parseJest.js";
+import { tally } from "./tally.js";
 import type { SuiteError, TestCase } from "./types.js";
 
 const decode = (s: string) =>
@@ -33,6 +34,5 @@ export function parseJunit(xml: string): ParsedRun | null {
     });
   }
   if (tests.length === 0) return null;
-  const count = (s: string) => tests.filter((t) => t.status === s).length;
-  return { total: tests.length, passed: count("passed"), failed: count("failed"), skipped: count("skipped"), tests, suiteErrors };
+  return { ...tally(tests, suiteErrors), tests, suiteErrors };
 }

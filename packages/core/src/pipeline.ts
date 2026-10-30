@@ -25,7 +25,11 @@ import { NOCAP_VERSION } from "./version.js";
 
 /** Execution-backed stage (suite run, Bitecheck, build commands). Supplied by P5; absent under --no-exec. */
 export interface ExecStage {
-  runSuite(ctx: { repoRoot: string; headSha: string }): Promise<TestRunResult | null>;
+  /**
+   * `inPlace`: head is the working tree (a snapshot, or a clean HEAD), so the suite runs in the user's own checkout
+   * with its installed dependencies. Otherwise it runs in a throwaway worktree at `headSha`.
+   */
+  runSuite(ctx: { repoRoot: string; headSha: string; inPlace: boolean }): Promise<TestRunResult | null>;
   bitecheck(claim: Claim, ctx: { repoRoot: string; baseSha: string; headSha: string; changeSet: ChangeSet }): Promise<BitecheckResult | null>;
   runCommand(command: string, ctx: { repoRoot: string; headSha: string }): Promise<{ exitCode: number; durationMs: number; stderrTail: string; command: string } | null>;
   /** Removes any worktree the stage created. Always called, even when verification throws. */
@@ -165,7 +169,15 @@ async function verifyInner(input: VerifyInput): Promise<VerifyOutput> {
   const execEnabled = config.exec && input.execStage !== undefined;
   const stage = execEnabled ? input.execStage : undefined;
   const ctxBase = { repoRoot: refs.repoRoot, baseSha: refs.baseSha, headSha: refs.headSha };
-  const suite = stage ? await step("suite", () => stage.runSuite(ctxBase), (s) => (s ? `${s.passed}/${s.total}` : "no runner")) : null;
+  let inPlace = refs.headIsSnapshot;
+  if (stage && !inPlace) {
+    const headNow = await git.raw(["rev-parse", "HEAD"], { cwd: refs.repoRoot });
+    const dirty = await git.raw(["status", "--porcelain"], { cwd: refs.repoRoot });
+    inPlace = headNow.exitCode === 0 && headNow.stdout.trim() === refs.headSha && dirty.exitCode === 0 && dirty.stdout.trim() === "";
+  }
+  const suite = stage
+    ? await step("suite", () => stage.runSuite({ ...ctxBase, inPlace }), (s) => (s ? `${s.environmentError ? "environment: " : ""}${s.passed}/${s.total} passed${inPlace ? " in place" : ""}` : "no runner"))
+    : null;
   const bitechecks = new Map<string, BitecheckResult>();
   const commands = new Map<string, { exitCode: number; durationMs: number; stderrTail: string; command: string }>();
   if (stage) {

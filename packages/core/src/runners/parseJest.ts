@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { tally } from "./tally.js";
 import type { SuiteError, TestCase } from "./types.js";
 
 const Assertion = z.object({
@@ -70,15 +71,5 @@ export function parseJestJson(text: string, roots: string | string[]): ParsedRun
       suiteErrors.push({ file: path, message: file.message ?? "suite failed to run" });
     }
   }
-  const count = (s: string) => tests.filter((t) => t.status === s).length;
-  const failed = count("failed");
-  const skipped = count("skipped");
-  return {
-    total: tests.length,
-    passed: count("passed"),
-    failed: failed + suiteErrors.length,
-    skipped,
-    tests,
-    suiteErrors,
-  };
+  return { ...tally(tests, suiteErrors), tests, suiteErrors };
 }

@@ -168,87 +168,98 @@ Several tools check agent claims; none that I know of resolves which tests a giv
 
 ## Dogfooding
 
-nocap checks its own work. The same command is run against the same range with each version, so the difference is the tool.
+nocap checks its own work. The same command runs against the same range with each version, with the live model (`gpt-oss-120b@groq`, key from `nocap config set llm-key`), so the only difference is the tool:
 
 ```bash
-git clone https://github.com/shankywho/nocap && cd nocap && pnpm install
-# in the repo root, with the published tarball of the version under test:
-npx --yes ./nocap-<version>.tgz check --offline --no-hunks \
+# in the repo root, with the packed tarball of the version under test
+npx --yes ./nocap-<version>.tgz check --no-hunks \
   --base 92e05bb --head 1a294f9 \
   --summary docs/dogfood/0.1.1-summary.md
 ```
 
-`docs/dogfood/0.1.1-summary.md` is the summary of the 0.1.1 work, rebuilt from the closing message of that session (the original paste was not saved), with two sentences removed that were wrong about 0.1.1. `--offline` keeps it deterministic. `--head 1a294f9` is not the working tree, so the suite cannot run in place: it runs in a bare checkout, which is where 0.1.1 went wrong.
+`docs/dogfood/0.1.1-summary.md` is the agent's own closing message for the 0.1.1 work, verbatim. `--head 1a294f9` is not the working tree, so the suite cannot run in place: it runs in a bare checkout, which is where 0.1.1 went wrong. Every verdict below is as printed; nothing was edited out except the long UNDISCLOSED tail.
 
-**Before, 0.1.1:** `FAIL`, three ✗ and two flags, all false.
+### 0.1.1: `FAIL`
 
-- ✗ "Added tests for the Bitecheck stub mode…" and ✗ "Added tests for the node --test runner…": "the claimed tests fail on head". They failed only because the worktree had no workspace `node_modules` or built packages.
-- ✗ "All 301 tests pass": the report said `61/65 passed` and `36 of 65 tests fail` at the same time (two different counts), because a setup failure was counted as test failures.
-- `test config changed` on `hygiene.test.ts:8` (an import path containing "exclude") and `skip added` on `runners.nodeTest.test.ts:49` (a `test.skip(` inside a template literal).
+One ✗ and two flags, all false.
+
+- ✗ "All six fixes are done and pushed to `origin/main`, with small commits and a test for each": "The claimed tests fail on head". The model read "a test for each" as a tests-added claim, and Bitecheck ran in a worktree that had no workspace `node_modules` or built packages, so everything failed for setup reasons.
+- `test config changed` on `hygiene.test.ts:8` (an import path that contains "exclude") and `skip added` on `runners.nodeTest.test.ts:49` (a `test.skip(` inside a template literal).
 
 ```
-NOCAP  receipt 7712f54817  ·  agent: unknown  ·  base 92e05bb → (1a294f9)
+NOCAP  receipt c735f1da69  ·  agent: unknown  ·  base 92e05bb → (1a294f9)
 ──────────────────────────────────────────────────────────────────────────────
-! UNVERIFIABLE  "Added `config.ts` in packages/core/src/adapters"
-                'config.ts' matches several files: apps/cli/src/commands/config.ts, fixtures/project/src/config.ts, packages/core/src/adapters/config.ts.
-! UNVERIFIABLE  "Added tests for the offline banner in apps/cli/test/config.test.ts"
-                The Bitecheck could not run in this environment.
-✗ CONTRADICTED  "Added tests for the Bitecheck stub mode in packages/core/test/bitecheck.stub.test.ts"
+✗ CONTRADICTED  "All six fixes are done and pushed to `origin/main`, with small commits and a test for each"
                 The claimed tests fail on head.
-! UNVERIFIABLE  "Added tests for hygiene in packages/core/test/hygiene.test.ts"
-                The Bitecheck could not run in this environment.
-✗ CONTRADICTED  "Added tests for the node --test runner in packages/core/test/runners.nodeTest.test.ts"
-                The claimed tests fail on head.
-✗ CONTRADICTED  "All 301 tests pass"
-                61/65 passed · vitest · 9.7s
-                36 of 65 tests fail on head.
-                ! test config changed  packages/core/test/hygiene.test.ts:8  import { isAlwaysExcluded } from "../src/git/exclude";
-                ! skip added  packages/core/test/runners.nodeTest.test.ts:49  put(dir, "test/a.test.js", `import { test, describe } from "node:test";\nimport assert from "node:assert";\ndescribe("math", () => {\n  test("adds", () => assert.equal(1 + 1, 2));\n  test("breaks", () => assert.equal(1, 2));\n  test.skip("later", () => {});\n});\n`);
+✓ VERIFIED      "I didn't publish"
+                No file mapped to 'publish' changed.
+! UNVERIFIABLE  "Lockfiles show as one quiet "lockfile changed" line and don't make a run MIXED"
+                Not a checkable claim.
+✓ VERIFIED      "docs/BITECHECK.md is updated"
+                docs/BITECHECK.md  M +10 −5
+FLAG            test config changed  packages/core/test/hygiene.test.ts:8  import { isAlwaysExcluded } from "../src/git/exclude";
+FLAG            skip added  packages/core/test/runners.nodeTest.test.ts:49  put(dir, "test/a.test.js", `import { test, describe } from "node:test";\nimport assert from "node:assert";\ndescribe("math", () => {\n  test("adds", () => assert.equal(1 + 1, 2));\n  test("breaks", () => assert.equal(1, 2));\n  test.skip("later", () => {});\n});\n`);
 ──────────────────────────────────────────────────────────────────────────────
 UNDISCLOSED     packages/core/test/__golden__/denominator.noexec.json  M +1 −1   (changed, never mentioned)
 UNDISCLOSED     packages/core/test/__golden__/denominator.terminal.txt  M +1 −1   (changed, never mentioned)
 UNDISCLOSED     packages/core/test/__golden__/fake_refactor.noexec.json  M +1 −1   (changed, never mentioned)
-UNDISCLOSED     packages/core/test/__golden__/honest.noexec.json  M +1 −1   (changed, never mentioned)
-UNDISCLOSED     … (list trimmed here; the full list is in the receipt JSON)
-RESULT          FAIL · 0 verified · 3 contradicted · 3 unverifiable · 20.5s · offline
+UNDISCLOSED     … (trimmed here; the full list is in the receipt JSON)
+RESULT          FAIL · 2 verified · 1 contradicted · 1 unverifiable · 19.7s · gpt-oss-120b@groq
 ```
 
-**After, 0.1.2:** `MIXED`, no ✗, no false flags, counts consistent.
+### 0.1.2: `MIXED`
 
-- Tests that cannot run in a bare checkout are `!` (environment), never ✗. The two tests that only fail there, because they read gitignored fixtures, are reported as depending on uncommitted files.
-- `Bumped version to 0.1.1` and `Regenerated goldens` are now checked, with the changed files as evidence, so the goldens no longer show up as UNDISCLOSED.
-- Two Bitecheck results are still `!` in this run (the offline banner tests and the `node --test` tests could not be run in the bare checkout). They stay `!` rather than guessing.
-- The remaining UNDISCLOSED files are real: the summary does not mention them.
+No ✗, no flags.
 
 ```
-NOCAP  receipt 29dfb7c868  ·  agent: unknown  ·  base 92e05bb → (1a294f9)
+NOCAP  receipt ac6d9a8c8b  ·  agent: unknown  ·  base 92e05bb → (1a294f9)
 ──────────────────────────────────────────────────────────────────────────────
-! UNVERIFIABLE  "Added `config.ts` in packages/core/src/adapters"
-                'config.ts' matches several files: apps/cli/src/commands/config.ts, fixtures/project/src/config.ts, packages/core/src/adapters/config.ts.
-! UNVERIFIABLE  "Added tests for the offline banner in apps/cli/test/config.test.ts"
+✓ VERIFIED      "I didn't publish;"
+                No file mapped to 'publish' changed.
+✓ VERIFIED      "nocap config set llm-key and nocap config get work"
+                apps/cli/src/commands/config.ts  A +46 −0
+! UNVERIFIABLE  "Added functions are stubbed to return undefined"
+                The claim names no identifier to look for.
+! UNVERIFIABLE  "A test asserting only typeof mul === 'function' comes back TOOTHLESS"
                 The Bitecheck could not run in this environment.
-✓ VERIFIED      "Added tests for the Bitecheck stub mode in packages/core/test/bitecheck.stub.test.ts"
-                BITECHECK (stub) stubbed runConfig, configFile, readConfig, writeConfigValue, resolveLlmKey, llmStatus, ensureTs, load, tsFunctions, stubTsBody, pyDefs, stubPython, tsBodies, revertTsFunction, revertPython, mutateForStub, functionNames, addedFunctions, stubFunctions, T, isStubbable, excludePathspecs, isAlwaysExcluded, undisclosedView, parseNodeTestScript, nodeTestArgs, isNodeTestScript, junitReporterMissing, runNodeTests, runFixtureGit() → 10/12 matching tests fail
-✓ VERIFIED      "Added tests for hygiene in packages/core/test/hygiene.test.ts"
-                BITECHECK (stub) stubbed runConfig, configFile, readConfig, writeConfigValue, resolveLlmKey, llmStatus, ensureTs, load, tsFunctions, stubTsBody, pyDefs, stubPython, tsBodies, revertTsFunction, revertPython, mutateForStub, functionNames, addedFunctions, stubFunctions, T, isStubbable, excludePathspecs, isAlwaysExcluded, undisclosedView, parseNodeTestScript, nodeTestArgs, isNodeTestScript, junitReporterMissing, runNodeTests, runFixtureGit() → 3/5 matching tests fail
-! UNVERIFIABLE  "Added tests for the node --test runner in packages/core/test/runners.nodeTest.test.ts"
+! UNVERIFIABLE  "A test asserting mul(2,3) === 6 comes back BITES"
                 The Bitecheck could not run in this environment.
-✓ VERIFIED      "Bumped version to 0.1.1"
+✓ VERIFIED      "docs/BITECHECK.md is updated"
+                docs/BITECHECK.md  M +10 −5
+✓ VERIFIED      "version is 0.1.1"
                 apps/cli/package.json  M +1 −1
-✓ VERIFIED      "Regenerated goldens"
-                fixtures/scenarios/untracked/expected.json  M +1 −1
-! UNVERIFIABLE  "All 301 tests pass"
-                2 tests fail in a clean checkout of 1a294f9 but pass in your working tree, so they depend on uncommitted files (build output, caches, generated fixtures), not on the code under review
 ──────────────────────────────────────────────────────────────────────────────
-UNDISCLOSED     packages/core/test/fixtures.git-isolation.test.ts  A +69 −0   (changed, never mentioned)
-UNDISCLOSED     packages/core/test/regexExtractor.test.ts  M +20 −0   (changed, never mentioned)
-UNDISCLOSED     packages/core/test/renderTerminal.test.ts  M +12 −0   (changed, never mentioned)
-UNDISCLOSED     packages/core/test/staticVerifiers.test.ts  M +1 −1   (changed, never mentioned)
-UNDISCLOSED     … (list trimmed here; the full list is in the receipt JSON)
-RESULT          MIXED · 4 verified · 0 contradicted · 4 unverifiable · 190.7s · offline
+UNDISCLOSED     apps/cli/test/config.test.ts  A +101 −0   (changed, never mentioned)
+UNDISCLOSED     packages/core/test/__golden__/denominator.terminal.txt  M +1 −1   (changed, never mentioned)
+UNDISCLOSED     packages/core/test/__golden__/fake_refactor.noexec.json  M +1 −1   (changed, never mentioned)
+UNDISCLOSED     … (trimmed here; the full list is in the receipt JSON)
+RESULT          MIXED · 4 verified · 0 contradicted · 3 unverifiable · 251.7s · gpt-oss-120b@groq
 ```
 
-A real failure is still a ✗: `packages/core/test/monorepo.test.ts` has a case where a genuinely failing test in the working tree is reported as contradicted.
+- **No ✗ this time.** The Bitecheck results that could not run in the bare checkout are `!` (environment), and the two lines that were flagged are no longer.
+- **`✓ "I didn't publish"` is weak.** The model turned a sentence about npm into a scope claim about "publish", and the verifier found no file by that name changed. It is correct that no such file changed, but it says nothing about npm; treat it as noise, not a real check.
+- **The `!` verdicts** are honest: "Added functions are stubbed to return undefined" names no identifier, and the two `mul` examples are about nocap's behaviour, not about a test file in the diff.
+- **UNDISCLOSED is real.** The summary does not mention the test files, goldens or most of the documentation it changed.
+
+### A control: two false sentences, caught
+
+An earlier reconstruction of this summary had two sentences the agent never wrote; they are not in the run above. They are kept as a control (`docs/dogfood/control-two-sentences.md`), run statically (`--offline --no-exec`) over the same range, because both are false and nocap should catch them:
+
+```
+NOCAP  receipt f74b98d82a  ·  agent: unknown  ·  base 92e05bb → (1a294f9)
+──────────────────────────────────────────────────────────────────────────────
+✗ CONTRADICTED  "Added `workspace.ts` in packages/core/src/git"
+                'workspace.ts' is not in the change set or the head tree.
+✗ CONTRADICTED  "Didn't touch the web app"
+                web app → apps/cli/README.md, apps/cli/package.json, apps/cli/src/commands/chain.ts, apps/cli/src/commands/check.ts, apps/cli/src/comm …
+                apps/cli/package.json, apps/cli/README.md, apps/cli/src/commands/chain.ts, apps/cli/src/commands/check.ts, apps/cli/src/commands/confi …
+──────────────────────────────────────────────────────────────────────────────
+```
+
+- ✗ "Added `workspace.ts` in packages/core/src/git": wrong. `packages/core/src/git/workspace.ts` does not exist at `1a294f9` (it arrived in 0.1.2).
+- ✗ "Didn't touch the web app": wrong. `apps/web/app/page.tsx`, `apps/web/app/r/[id]/page.tsx`, `apps/web/app/api/health/route.ts` and `apps/web/package.json` all changed in that range.
+
+Both are true catches with file evidence.
 
 ## Architecture, API, privacy, development
 

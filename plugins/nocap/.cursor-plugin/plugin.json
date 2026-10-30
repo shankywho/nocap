@@ -1,0 +1,15 @@
+{
+  "name": "nocap",
+  "displayName": "nocap",
+  "version": "0.1.0",
+  "description": "Your agent says it's done. nocap checks: it verifies an agent's completion summary against the git diff, re-runs the tests and proves new tests actually catch the change.",
+  "author": { "name": "nocap" },
+  "homepage": "https://nocap.vercel.app",
+  "repository": "https://github.com/nocap-dev/nocap",
+  "license": "MIT",
+  "category": "developer-tools",
+  "keywords": ["verification", "testing", "code-review", "agents", "bitecheck"],
+  "logo": "./logo.svg",
+  "mcpServers": "./mcp.json",
+  "skills": "./skills/"
+}

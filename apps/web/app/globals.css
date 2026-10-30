@@ -158,23 +158,15 @@ kbd {
   color: var(--ink);
 }
 
-/* The red-pencil strike draws across a claim; the line is a pseudo-element so no gradient is needed. */
+/* The red-pencil strike goes through a claim, across every line it wraps to. */
 .strike {
-  position: relative;
-  display: inline;
+  text-decoration-line: line-through;
+  text-decoration-thickness: 2px;
+  text-decoration-color: transparent;
+  transition: text-decoration-color 0.55s ease;
 }
-.strike::after {
-  content: "";
-  position: absolute;
-  left: 0;
-  top: 58%;
-  height: 2px;
-  width: 0;
-  background: var(--contradicted);
-  transition: width 0.55s cubic-bezier(0.6, 0, 0.2, 1);
-}
-.strike[data-on="true"]::after {
-  width: 100%;
+.strike[data-on="true"] {
+  text-decoration-color: var(--contradicted);
 }
 .hl {
   background-color: transparent;
@@ -235,7 +227,7 @@ a:hover .mark .check,
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .strike::after,
+  .strike,
   .hl,
   .mark .slash,
   .mark .check {

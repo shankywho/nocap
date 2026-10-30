@@ -149,6 +149,10 @@ Workflow recipe: run `npx @shankywho/nocap check --md` on every agent PR and pas
 
 Claim extraction uses any OpenAI-compatible endpoint, `openai/gpt-oss-120b` on Groq by default. Set `LLM_BASE_URL`, `LLM_API_KEY` and `LLM_MODEL` to swap it. The spec estimates about $0.007 per receipt at that model's list prices; that figure is not measured here. `--offline` (or `NOCAP_OFFLINE=1`) skips the model and uses the deterministic extractor, with the same verifiers.
 
+## Safety
+
+nocap never writes to your repo. Tests and Bitecheck run in a throwaway git worktree with its own copy of your dependency directories; nothing installs, and builds only run if you pass `--allow-build`. If a build output is missing and `--allow-build` is off, the result is `!` (environment), not ✗. See [docs/BITECHECK.md](docs/BITECHECK.md).
+
 ## What it can't check
 
 - Semantic correctness: it proves tests bite, not that the change is right.

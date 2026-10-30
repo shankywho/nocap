@@ -7,6 +7,7 @@ import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 import { buildFixtures } from "../../../scripts/build-fixtures";
 import { childEnvFrom, verifyLocal } from "../src/adapters/local";
+import { NO_INSTALL_ENV } from "../src/exec/safeEnv";
 
 const ROOT = fileURLToPath(new URL("../../..", import.meta.url));
 const tracked = () => execFileSync("git", ["ls-files", "-z"], { cwd: ROOT, encoding: "utf8" }).split("\0").filter(Boolean);
@@ -90,7 +91,8 @@ describe("runtime leakage", () => {
 
   it("childEnvFrom passes only the allow-list to test runners", () => {
     const out = childEnvFrom({ ...SENTINELS, PATH: "/bin", HOME: "/h", CI: "0" });
-    expect(Object.keys(out).sort()).toEqual(["CI", "HOME", "PATH", "pnpm_config_verify_deps_before_run"]);
+    // the allow-list plus the fixed no-install guards, and nothing from the caller's secrets
+    expect(Object.keys(out).filter((k) => !(k in NO_INSTALL_ENV)).sort()).toEqual(["CI", "HOME", "PATH"]);
     expect(JSON.stringify(out)).not.toContain("SENTINEL");
   });
 

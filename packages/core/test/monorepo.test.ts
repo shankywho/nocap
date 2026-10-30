@@ -1,5 +1,5 @@
 import { execFileSync } from "node:child_process";
-import { mkdirSync, symlinkSync, writeFileSync } from "node:fs";
+import { mkdirSync, readdirSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
@@ -30,6 +30,15 @@ beforeAll(async () => {
 });
 afterAll(async () => rm(tmp, { recursive: true, force: true }));
 
+/** A real node_modules directory whose entries link to this repo's installed tools (vitest etc.), like a package manager's own layout. */
+function linkRootModules(dir: string) {
+  mkdirSync(join(dir, "node_modules"), { recursive: true });
+  for (const name of readdirSync(join(ROOT, "node_modules"))) {
+    if (name === ".modules.yaml" || name.startsWith(".vite")) continue;
+    symlinkSync(join(ROOT, "node_modules", name), join(dir, "node_modules", name));
+  }
+}
+
 /** An npm-workspace monorepo. `built`: package a is consumed through dist/, produced by the root build script. */
 function workspace(name: string, built: boolean) {
   const dir = join(tmp, name);
@@ -44,7 +53,7 @@ function workspace(name: string, built: boolean) {
   git(dir, "add", "-A");
   git(dir, "commit", "-q", "-m", "base");
   // what `pnpm install` / `npm install` leave behind, all gitignored
-  symlinkSync(join(ROOT, "node_modules"), join(dir, "node_modules"), "junction");
+  linkRootModules(dir);
   mkdirSync(join(dir, "packages/b/node_modules/@ws"), { recursive: true });
   symlinkSync(join(dir, "packages/a"), join(dir, "packages/b/node_modules/@ws/a"), "junction");
   if (built) execFileSync("node", ["packages/a/build.mjs"], { cwd: dir });
@@ -108,8 +117,21 @@ describe("monorepo: tests_pass runs in place, Bitecheck in a worktree that can r
     execFileSync("node", ["packages/a/build.mjs"], { cwd: dir });
     put(dir, "packages/b/src/b.js", 'import { one } from "@ws/a";\nexport const two = () => one() + 1;\nexport const three = () => two() + 1;\n');
     put(dir, "packages/b/test/b.test.js", `import { expect, it } from "vitest";\nimport { two } from "../src/b.js";\nit("two follows one", () => expect(two()).toBe(11));\n`);
-    const { receipt } = await verifyLocal({ repoPath: dir, summary: "Added tests for two in packages/b/test/b.test.js.", exec: true, offline: true, save: false }, { ...ENV, NOCAP_OFFLINE: "1" });
+    const { receipt } = await verifyLocal({ repoPath: dir, summary: "Added tests for two in packages/b/test/b.test.js.", exec: true, offline: true, save: false, allowBuild: true }, { ...ENV, NOCAP_OFFLINE: "1" });
     expect(claim(receipt, "tests_added")?.bitecheck?.outcome).toBe("bites");
+  }, 240_000);
+
+  it("without --allow-build the same run is `environment`: nothing is built, nothing is accused", async () => {
+    const dir = workspace("ws-nobuild-default", true);
+    put(dir, "packages/a/src/index.js", "export const one = () => 10;\n");
+    execFileSync("node", ["packages/a/build.mjs"], { cwd: dir });
+    put(dir, "packages/b/test/b.test.js", `import { expect, it } from "vitest";\nimport { two } from "../src/b.js";\nit("two follows one", () => expect(two()).toBe(11));\n`);
+    rmSync(join(dir, "packages/a/dist"), { recursive: true, force: true }); // as in a fresh checkout the build output is absent
+    execFileSync("node", ["packages/a/build.mjs"], { cwd: dir });
+    const { receipt } = await verifyLocal({ repoPath: dir, summary: "Added tests for two in packages/b/test/b.test.js.", exec: true, offline: true, save: false }, { ...ENV, NOCAP_OFFLINE: "1" });
+    const v = claim(receipt, "tests_added");
+    expect(v?.bitecheck?.outcome).not.toBe("toothless");
+    expect(v?.status).not.toBe("contradicted");
   }, 240_000);
 });
 
@@ -192,7 +214,7 @@ describe("nocap never installs dependencies", () => {
     put(dir, "packages/a/src/index.js", "export const one = () => 10;\n");
     execFileSync("node", ["packages/a/build.mjs"], { cwd: dir });
     put(dir, "packages/b/test/b.test.js", `import { expect, it } from "vitest";\nimport { two } from "../src/b.js";\nit("two follows one", () => expect(two()).toBe(11));\n`);
-    const { receipt } = await verifyLocal({ repoPath: dir, summary: "Added tests for two in packages/b/test/b.test.js.", exec: true, offline: true, save: false }, { ...ENV, PATH: `${bin}:${ENV.PATH}`, NOCAP_OFFLINE: "1" });
+    const { receipt } = await verifyLocal({ repoPath: dir, summary: "Added tests for two in packages/b/test/b.test.js.", exec: true, offline: true, save: false, allowBuild: true }, { ...ENV, PATH: `${bin}:${ENV.PATH}`, NOCAP_OFFLINE: "1" });
     expect(claim(receipt, "tests_added")?.bitecheck?.outcome).toBe("bites");
     const log = (await import("node:fs")).readFileSync(join(logs, "pnpm.log"), "utf8");
     expect(log).toContain("args=-r build");
@@ -223,8 +245,8 @@ describe("nocap never installs dependencies", () => {
     put(priv, "x.txt", "1");
     git(priv, "add", "x.txt");
     git(priv, "commit", "-q", "-m", "c");
-    const stage = createExecStage({ git: git2, exec: new ExecaExec(), fs: real, runId: "guard", timeoutMs: 30_000, env: ENV, onWarning: (m) => warnings.push(m) });
-    await stage.runCommand("npm test", { repoRoot: priv, headSha: git(priv, "rev-parse", "HEAD") }); // creates the worktree
+    const stage = createExecStage({ git: git2, exec: new ExecaExec(), fs: real, runId: "guard", timeoutMs: 30_000, env: ENV, allowBuild: true, onWarning: (m) => warnings.push(m) });
+    await stage.runCommand("npm test", { repoRoot: priv, headSha: git(priv, "rev-parse", "HEAD") }); // creates the (writable) worktree
     writeFileSync(join(priv, "node_modules", ".modules.yaml"), "changed by something else");
     await stage.dispose?.();
     expect(warnings).toHaveLength(1);
@@ -295,4 +317,50 @@ describe("build only when needed; uncommitted-file failures are not failures", (
     const { receipt } = await verifyLocal({ repoPath: dir, summary: "All tests pass.", exec: true, offline: true, save: false }, { ...ENV, NOCAP_OFFLINE: "1" });
     expect(claim(receipt, "tests_pass")?.status).toBe("contradicted");
   }, 120_000);
+});
+
+describe("no-install guard for npm and yarn", () => {
+  function fakeManager(logDir: string, name: "npm" | "yarn"): string {
+    const bin = join(logDir, `bin-${name}`);
+    put(bin, name, `#!/bin/sh\necho "${name} $* offline=$npm_config_offline audit=$npm_config_audit lock=$npm_config_package_lock net=$YARN_ENABLE_NETWORK immutable=$YARN_ENABLE_IMMUTABLE_INSTALLS pnpm=$pnpm_config_verify_deps_before_run pyc=$PYTHONDONTWRITEBYTECODE" >> "${join(logDir, `${name}.log`)}"\nexec node packages/a/build.mjs\n`);
+    execFileSync("chmod", ["+x", join(bin, name)]);
+    return bin;
+  }
+  const bitecheckWith = async (dir: string, bin: string) => {
+    put(dir, "packages/a/src/index.js", "export const one = () => 10;\n");
+    execFileSync("node", ["packages/a/build.mjs"], { cwd: dir });
+    put(dir, "packages/b/test/b.test.js", `import { expect, it } from "vitest";\nimport { two } from "../src/b.js";\nit("two follows one", () => expect(two()).toBe(11));\n`);
+    return verifyLocal({ repoPath: dir, summary: "Added tests for two in packages/b/test/b.test.js.", exec: true, offline: true, save: false, allowBuild: true }, { ...ENV, PATH: `${bin}:${ENV.PATH}`, NOCAP_OFFLINE: "1" });
+  };
+  const readLog = async (p: string) => (await import("node:fs")).readFileSync(p, "utf8");
+
+  it("npm builds run with offline, no audit, no lockfile", async () => {
+    const dir = workspace("ws-npm-guard", true);
+    const logs = join(tmp, "npm-logs");
+    const { receipt } = await bitecheckWith(dir, fakeManager(logs, "npm"));
+    expect(claim(receipt, "tests_added")?.bitecheck?.outcome).toBe("bites");
+    const lines = (await readLog(join(logs, "npm.log"))).split("\n").filter(Boolean);
+    expect(lines.length).toBeGreaterThan(0);
+    for (const l of lines) expect(l).toMatch(/offline=true audit=false lock=false/);
+  }, 240_000);
+
+  it("yarn builds run with network off and immutable installs", async () => {
+    const dir = workspace("ws-yarn-guard", true);
+    put(dir, "yarn.lock", "# yarn lockfile v1\n");
+    git(dir, "add", "-A");
+    git(dir, "commit", "-q", "-m", "yarn");
+    const logs = join(tmp, "yarn-logs");
+    const { receipt } = await bitecheckWith(dir, fakeManager(logs, "yarn"));
+    expect(claim(receipt, "tests_added")?.bitecheck?.outcome).toBe("bites");
+    const lines = (await readLog(join(logs, "yarn.log"))).split("\n").filter(Boolean);
+    expect(lines.length).toBeGreaterThan(0);
+    for (const l of lines) expect(l).toMatch(/net=0 immutable=true/);
+  }, 240_000);
+
+  it("every guard variable is in the environment every child gets", async () => {
+    const { childEnvFrom } = await import("../src/adapters/local");
+    const { NO_INSTALL_ENV } = await import("../src/exec/safeEnv");
+    const env = childEnvFrom({ PATH: "/bin", HOME: "/h", npm_config_offline: "false", YARN_ENABLE_NETWORK: "1" });
+    for (const [k, v] of Object.entries(NO_INSTALL_ENV)) expect(env[k], k).toBe(v);
+  });
 });

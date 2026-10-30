@@ -14,6 +14,7 @@ export interface LoopOptions {
   summaryFrom?: string;
   max?: string;
   exec?: boolean;
+  allowBuild?: boolean;
   agent?: string;
   base?: string;
   verbose?: boolean;
@@ -35,7 +36,7 @@ export async function runLoop(opts: LoopOptions, env: NodeJS.ProcessEnv = proces
         async check(summary, chainId) {
           const r = await runCheck(
             {
-              cwd, summaryText: summary, chain: chainId ?? "auto", exec: opts.exec, ...(opts.agent ? { agent: opts.agent } : {}),
+              cwd, summaryText: summary, chain: chainId ?? "auto", exec: opts.exec, ...(opts.allowBuild ? { allowBuild: true } : {}), ...(opts.agent ? { agent: opts.agent } : {}),
               ...(opts.base ? { base: opts.base } : {}), ...(opts.verbose ? { verbose: true } : {}),
             },
             env,

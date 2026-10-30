@@ -28,6 +28,13 @@ export interface BitecheckOptions {
   testCommand?: string | null;
   testFormat?: "jest" | "junit" | null;
   onPhase?: (phase: "head" | "revert" | "rerun", detail: string) => void;
+  /**
+   * Builds are opt-in. Off (default): a test that needs workspace build output that is not in the checkout gives
+   * `environment`. On: the build runs in a worktree whose dependency directories are cloned or copied, never linked.
+   */
+  allowBuild?: boolean;
+  /** Test seam: force linked dependency directories. */
+  modulesMode?: "auto" | "link";
 }
 
 const IMPORT_ERROR = /Cannot find module|Failed to resolve import|Failed to load url|ModuleNotFoundError|ImportError|is not a function|is not defined|does not provide an export|No known conditions/i;
@@ -89,16 +96,19 @@ export async function bitecheck(options: BitecheckOptions): Promise<BitecheckRes
   );
   if (sourceFiles.length === 0) return result("environment", selected);
 
-  const wt = await createWorktree({ git: opts.git, fs: opts.fs, repoRoot: opts.repoRoot, ref: opts.headSha, runId: opts.runId });
+  const make = (modules: "auto" | "writable" | "link") =>
+    createWorktree({ git: opts.git, fs: opts.fs, exec: opts.exec, repoRoot: opts.repoRoot, ref: opts.headSha, runId: opts.runId, modules });
+  let wt = await make(opts.modulesMode ?? "auto");
   try {
     const runner = opts.testCommand ? "custom" : await detectRunner(opts.fs, wt.path);
     if (!runner) return result("environment", selected);
     const files = [...new Set(selected.map((t) => t.file))];
     const titles = selected.map((t) => escapeRegex(t.title));
-    const common = {
+    // A function, because the worktree may be recreated with writable dependency directories before the first run.
+    const common = () => ({
       exec: opts.exec, fs: opts.fs, cwd: wt.path, runner, files, titles, timeoutMs: opts.timeoutMs, env: opts.env,
       customCommand: opts.testCommand ?? null, customFormat: opts.testFormat ?? null,
-    };
+    });
 
     // A workspace package that tests reach through its built output (dist/) has no output in a fresh checkout, and the
     // output must be rebuilt after the revert: stale output would hide a toothless test. If it cannot be built the
@@ -108,8 +118,15 @@ export async function bitecheck(options: BitecheckOptions): Promise<BitecheckRes
     // Only when the selected tests (through their relative imports) actually reach such a package.
     const needed = missingBuild.length > 0 ? await importedWorkspaceNames(opts.fs, wt.path, files, missingBuild.map((p) => p.name)) : new Set<string>();
     if (needed.size > 0) {
+      // Missing build output. Building writes, so it is opt-in and needs dependency directories the build cannot write through.
+      if (opts.allowBuild !== true) return result("environment", selected);
       build = await detectBuildCommand(opts.fs, wt.path);
       if (!build) return result("environment", selected);
+      if (!wt.isolated) {
+        await wt.remove();
+        wt = await make("writable");
+        if (!wt.isolated) return result("environment", selected);
+      }
     }
     const rebuild = async (): Promise<boolean> => {
       if (!build) return true;
@@ -119,7 +136,7 @@ export async function bitecheck(options: BitecheckOptions): Promise<BitecheckRes
     if (!(await rebuild())) return result("environment", selected);
 
     opts.onPhase?.("head", `${selected.length} test(s) in ${files.join(", ")}`);
-    const head = await runTests(common);
+    const head = await runTests(common());
     if (head.environmentError) return result("environment", selected);
     const headEv = evidence("head", head, selected);
     const onHead = pick(head, selected);
@@ -156,7 +173,7 @@ export async function bitecheck(options: BitecheckOptions): Promise<BitecheckRes
 
     if (!(await rebuild())) return result("environment", selected, { head: headEv, revertedFiles, deletedForRevert, ...(stubMode ? { mode: "stub" as const, stubbed } : {}) });
     opts.onPhase?.("rerun", "re-running the selected tests against the reverted source");
-    const re = await runTests({ ...common, classifyEnvironment: false });
+    const re = await runTests({ ...common(), classifyEnvironment: false });
     if (re.environmentError) return result("environment", selected, { head: headEv, revertedFiles, deletedForRevert });
     const reEv = evidence("reverted", re, selected);
     const onRe = pick(re, selected);

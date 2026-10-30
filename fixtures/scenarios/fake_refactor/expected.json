@@ -1,0 +1,11 @@
+{
+  "overall": "FAIL",
+  "claims": [
+    {
+      "type": "refactor_no_behavior_change",
+      "status": "contradicted"
+    }
+  ],
+  "flags": [],
+  "mustNotContradict": false
+}

@@ -1,0 +1,11 @@
+{
+  "overall": "FAIL",
+  "claims": [
+    {
+      "type": "scope_none",
+      "status": "contradicted"
+    }
+  ],
+  "flags": [],
+  "mustNotContradict": false
+}

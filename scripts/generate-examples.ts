@@ -20,31 +20,38 @@ async function main() {
   await mkdir(join(ROOT, "examples"), { recursive: true });
   const tmp = await mkdtemp(join(tmpdir(), "nocap-examples-"));
   try {
-    // ex-toothless + ex-loop-2: the repair loop on scenario 2, two attempts in one proof chain.
-    await buildFixtures({ quiet: true, cacheDir: tmp, scenarios: ["toothless", "scope_violation", "denominator"] });
-    const cwd = join(tmp, "toothless");
-    const store = new FsChainStore(new NodeFs(), join(cwd, ".nocap", "chains"));
-    const result = await runLoop(
-      {
-        check: async (summary, chainId) => {
-          const r = await runScenario("toothless", { exec: true, cacheDir: tmp, summary, chain: { id: chainId ?? "auto", store } });
-          return { receipt: r.receipt, repair: r.repair };
+    await buildFixtures({ quiet: true, cacheDir: tmp, scenarios: ["toothless", "toothless_gamed", "scope_violation", "denominator"] });
+    const loopOn = async (name: string) => {
+      const cwd = join(tmp, name);
+      const store = new FsChainStore(new NodeFs(), join(cwd, ".nocap", "chains"));
+      const result = await runLoop(
+        {
+          check: async (summary, chainId) => {
+            const r = await runScenario(name, { exec: true, cacheDir: tmp, summary, chain: { id: chainId ?? "auto", store } });
+            return { receipt: r.receipt, repair: r.repair };
+          },
+          writeRepair: async (packet, attempt) => {
+            const file = join(cwd, `.repair-${attempt}.md`);
+            await writeFile(file, repairMarkdown(packet));
+            return file;
+          },
+          runAgent: async (file) => {
+            const { stdout } = await run(join(ROOT, "node_modules", ".bin", "tsx"), ["--tsconfig", join(ROOT, "tsconfig.tools.json"), join(ROOT, "scripts", "mock-agent.ts"), file], { cwd });
+            return { exitCode: 0, summary: stdout };
+          },
         },
-        writeRepair: async (packet, attempt) => {
-          const file = join(cwd, `.repair-${attempt}.md`);
-          await writeFile(file, repairMarkdown(packet));
-          return file;
-        },
-        runAgent: async (file) => {
-          const { stdout } = await run(join(ROOT, "node_modules", ".bin", "tsx"), ["--tsconfig", join(ROOT, "tsconfig.tools.json"), join(ROOT, "scripts", "mock-agent.ts"), file], { cwd });
-          return { exitCode: 0, summary: stdout };
-        },
-      },
-      await readFile(join(ROOT, "fixtures", "scenarios", "toothless", "summary.md"), "utf8"),
-      3,
-    );
-    await save("ex-toothless", result.receipts[0] as Receipt);
-    await save("ex-loop-2", result.receipts[1] as Receipt);
+        await readFile(join(ROOT, "fixtures", "scenarios", name, "summary.md"), "utf8"),
+        3,
+      );
+      return result.receipts;
+    };
+    // ex-toothless + ex-loop-2: the repair loop on scenario 2; ex-gamed-1/2: the same loop where the agent cheats.
+    const loop = await loopOn("toothless");
+    await save("ex-toothless", loop[0] as Receipt);
+    await save("ex-loop-2", loop[1] as Receipt);
+    const gamed = await loopOn("toothless_gamed");
+    await save("ex-gamed-1", gamed[0] as Receipt);
+    await save("ex-gamed", gamed[gamed.length - 1] as Receipt);
     for (const [name, id] of [["scope_violation", "ex-scope"], ["denominator", "ex-count"]] as const) {
       await save(id, (await runScenario(name, { exec: true, cacheDir: tmp })).receipt);
     }

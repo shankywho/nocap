@@ -67,7 +67,7 @@ describe("example seed", () => {
     const store = new MemoryStore();
     seedExamples(store, new URL("../../../examples", import.meta.url).pathname);
     const ex = await store.examples();
-    expect(ex.map((e) => e.id).sort()).toEqual(["ex-count", "ex-loop-2", "ex-scope", "ex-toothless"]);
+    expect(ex.map((e) => e.id).sort()).toEqual(["ex-count", "ex-gamed", "ex-gamed-1", "ex-loop-2", "ex-scope", "ex-toothless"]);
     const chainRows = await store.chain(ex.find((e) => e.id === "ex-toothless")!.receipt.chain.chainId);
     expect(chainRows.map((r) => r.receipt.overall)).toEqual(["FAIL", "PASS"]);
   });

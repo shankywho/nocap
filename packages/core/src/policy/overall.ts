@@ -1,6 +1,6 @@
 import type { Evidence } from "../schema/evidence.js";
 import type { Flag, Verdict } from "../schema/verdict.js";
-import { isConfigPath, isTestPath } from "../git/classify.js";
+import { isConfigPath, isLockPath, isTestPath } from "../git/classify.js";
 
 export type Overall = "PASS" | "FAIL" | "MIXED";
 
@@ -10,7 +10,7 @@ export function overallPolicy(
   undisclosed: Evidence[],
 ): Overall {
   if (verdicts.some((v) => v.status === "contradicted")) return "FAIL";
-  const risky = undisclosed.some((e) => e.kind === "file" && (isTestPath(e.path) || isConfigPath(e.path)));
+  const risky = undisclosed.some((e) => e.kind === "file" && !isLockPath(e.path) && (isTestPath(e.path) || isConfigPath(e.path)));
   if (
     verdicts.some((v) => v.status === "unverifiable" || v.flags.length > 0) ||
     globalFlags.length > 0 ||

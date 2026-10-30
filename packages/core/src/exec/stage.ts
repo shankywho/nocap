@@ -3,6 +3,7 @@ import { bitecheck } from "../bitecheck/run.js";
 import { createWorktree, type Worktree } from "../git/worktree.js";
 import type { ExecPort, FsPort, GitPort } from "../ports.js";
 import { detectRunner } from "../runners/detect.js";
+import { safeEnv } from "./safeEnv.js";
 import { collectedTooFew } from "../runners/classify.js";
 import { runTests } from "../runners/run.js";
 
@@ -17,6 +18,8 @@ export interface ExecStageOptions {
   testCommand?: string | null;
   testFormat?: "jest" | "junit" | null;
   onBitecheck?: (claimId: string, phase: "head" | "revert" | "rerun", detail: string) => void;
+  /** Called when something nocap ran changed the user's dependency tree. Should never happen; it is reported loudly if it does. */
+  onWarning?: (message: string) => void;
 }
 
 /** Commands a summary may ask us to run. Anything else is reported as not run. */
@@ -27,10 +30,21 @@ export function isSafeCommand(command: string): boolean {
   return SAFE_COMMAND.test(command.trim());
 }
 
-export function createExecStage(opts: ExecStageOptions): ExecStage {
+export function createExecStage(options: ExecStageOptions): ExecStage {
+  // Every child gets the no-install guard, whatever environment the shell supplied (see safeEnv.ts).
+  const opts: ExecStageOptions = { ...options, env: safeEnv(options.env) };
   let headTree: Worktree | null = null;
+  let guard: { file: string; before: string } | null = null;
+  const fingerprint = async (file: string): Promise<string> => {
+    const st = await opts.fs.stat(file).catch(() => null);
+    return st ? `${st.size}:${st.mtimeMs}` : "absent";
+  };
   const head = async (repoRoot: string, headSha: string) => {
-    headTree ??= await createWorktree({ git: opts.git, fs: opts.fs, repoRoot, ref: headSha, runId: opts.runId });
+    if (!headTree) {
+      const file = `${repoRoot}/node_modules/.modules.yaml`;
+      guard = { file, before: await fingerprint(file) };
+      headTree = await createWorktree({ git: opts.git, fs: opts.fs, repoRoot, ref: headSha, runId: opts.runId });
+    }
     return headTree;
   };
 
@@ -79,6 +93,10 @@ export function createExecStage(opts: ExecStageOptions): ExecStage {
     async dispose() {
       await headTree?.remove();
       headTree = null;
+      if (guard && (await fingerprint(guard.file)) !== guard.before) {
+        opts.onWarning?.(`${guard.file} changed while nocap ran. nocap does not install dependencies; check your node_modules (run your package manager's install if something is missing).`);
+      }
+      guard = null;
     },
   };
 }

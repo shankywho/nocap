@@ -1,0 +1,32 @@
+{
+  "name": "@nocap/core",
+  "version": "0.1.0",
+  "description": "nocap engine: verify a coding agent's claims against a repo with deterministic evidence.",
+  "license": "MIT",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": ["dist"],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "execa": "^10.2.1",
+    "gitdiff-parser": "^0.3.1",
+    "picomatch": "^4.0.7",
+    "simple-git": "^4.0.2",
+    "zod": "^4.6.7"
+  },
+  "devDependencies": {
+    "@types/node": "^24.10.1",
+    "@types/picomatch": "^4.0.2",
+    "typescript": "5.9.3"
+  }
+}

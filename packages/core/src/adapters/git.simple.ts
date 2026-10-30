@@ -16,10 +16,11 @@ export class SimpleGitPort implements GitPort {
       binary: "git",
       maxConcurrentProcesses: 1,
       timeout: { block: opts?.timeoutMs ?? DEFAULT_GIT_TIMEOUT_MS },
+      // simple-git guards GIT_* variables; the working-tree snapshot needs one.
+      allowEnvironment: ["GIT_INDEX_FILE", "GIT_DIR", "GIT_WORK_TREE", "GIT_OPTIONAL_LOCKS"],
     });
-    if (opts?.env) {
-      client.env(opts.env);
-    }
+    // Never let a read-only command refresh and rewrite the user's index.
+    client.env({ GIT_OPTIONAL_LOCKS: "0", ...(opts?.env ?? {}) });
     try {
       const stdout = await client.raw(args);
       return { stdout, stderr: "", exitCode: 0 };

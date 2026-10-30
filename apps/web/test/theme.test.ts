@@ -161,3 +161,29 @@ describe("copy and structure of the refined landing page", () => {
     expect(page).toContain('split("\\n\\n")[0]');
   });
 });
+
+describe("native scroll and content on first paint", () => {
+  const page = read("app/page.tsx");
+  it("has no smooth-scroll library or scroll-linked reveal", () => {
+    for (const f of ["app/page.tsx", "app/layout.tsx", "src/ui/landing.tsx", "src/ui/hero.tsx", "package.json"]) {
+      expect(read(f), f).not.toMatch(/lenis|framer-motion|whileInView|useScroll|ScrollProgress|SmoothScroll/i);
+    }
+  });
+  it("the Galley is server-rendered in its finished state", () => {
+    expect(read("src/ui/landing.tsx")).toContain("useState(n + 1)");
+  });
+  it("every section opens with a visible paragraph", () => {
+    expect(page).toContain("What nocap cannot check, as of version 0.1.2.");
+    expect(page).toContain("The questions we hear most.");
+  });
+  it("small caps labels are 12px Plex Sans small caps, not uppercase", () => {
+    const css = read("app/globals.css");
+    expect(css).toMatch(/\.smallcaps\s*{[^}]*font-size:\s*12px[^}]*font-variant-caps:\s*all-small-caps/);
+    // the rubber stamp is the only uppercase text; labels, the copy tab and stat captions are not
+    expect(read("src/ui/hero.tsx")).not.toMatch(/uppercase/);
+    const landing = read("src/ui/landing.tsx");
+    expect(landing.match(/uppercase/g)?.length).toBe(1);
+    expect(landing).toMatch(/stamp[^`]*uppercase/);
+  });
+});
+

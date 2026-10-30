@@ -380,11 +380,14 @@ export default async function Home() {
         n={7}
         title="Limitations"
         text={
-          <ul className="listrule m-0 list-none p-0">
-            {LIMITS.map((l) => (
-              <li key={l} className="py-3 text-[17px] text-cream first:pt-0">{l}</li>
-            ))}
-          </ul>
+          <>
+            <Lede>What nocap cannot check, as of version 0.1.2.</Lede>
+            <ul className="listrule m-0 list-none p-0">
+              {LIMITS.map((l) => (
+                <li key={l} className="py-3 text-[17px] text-cream first:pt-0">{l}</li>
+              ))}
+            </ul>
+          </>
         }
       >
         <figure className="m-0">
@@ -409,6 +412,7 @@ export default async function Home() {
             <span data-numeral aria-hidden className="mb-1 block font-heading text-[64px] leading-none text-lamp/70 xl:absolute xl:right-full xl:top-0 xl:mb-0 xl:mr-6">8</span>
             <h2 className="m-0 max-w-3xl text-[34px] leading-[1.15] text-cream">FAQ</h2>
           </header>
+          <p className="mb-6 mt-0 max-w-3xl text-[17px] text-muted">The questions we hear most. Select one to read the answer.</p>
           <div className="listrule max-w-3xl">
             {FAQ.map(([q, a]) => (
               <details key={q} className="py-4 first:pt-0">

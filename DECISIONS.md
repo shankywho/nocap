@@ -74,3 +74,16 @@ Anything that could not be confirmed against the source is marked **UNVERIFIED**
 - Decision: `MemoryStore` implements `ReceiptStore` and is used whenever `DATABASE_URL` is empty (and always under mock mode in tests). Prisma is generated only when a database URL exists; the health route reports `db: "memory"` otherwise.
 - Alternatives: SQLite (extra native dependency, and the spec says Postgres via Prisma).
 - Verified: spec §2/§7.1, not an external contract.
+## 2026-10-26 · P1 · Fixtures are real git repos with deterministic SHAs
+
+- Context: goldens compare receipt JSON, which embeds base/head SHAs and file lists. Fixtures must materialise identically on every machine and in CI.
+- Decision: each scenario is built by `scripts/build-fixtures.ts` into `.cache/fixtures/<name>` from the shared base project; author/committer identity and dates are fixed (`2026-10-26T13:00+05:30`), `.gitattributes`-style normalisation is not needed (autocrlf and filemode are forced off). Scenario repos symlink the workspace `node_modules`, so their suite runs against the same Vitest binary without a second install. Expected counts are asserted in `fixtures.selfcheck.test.ts`: 12/13/13/13/10/13/13/12 with one skip in `tampered`.
+- Alternatives: copying `node_modules` per fixture (slow, non-deterministic mtimes) or using a single repo with branches (harder to keep working-tree modes).
+- Verified: `pnpm fixtures` builds eight repos with stable SHAs across two runs; every head suite is green and matches the expected counts.
+
+## 2026-10-26 · P1 · Test-runner output is always a file, never stdout
+
+- Context: Vitest 5's `--reporter=json` writes `output.json` and prints only a human line to stdout; scraping stdout was fragile and colour-dependent.
+- Decision: every runner invocation writes to an explicit `--outputFile`; the engine reads and parses that file. Fixture self-checks follow the same rule and read `.cache/fixtures/<name>.head.json`.
+- Alternatives: parsing the dot reporter's stdout (rejected: ANSI, locale and version churn).
+- Verified: Vitest 5.0.5 behaviour observed locally on 2026-10-26; Jest's `--outputFile` is documented at https://jestjs.io/docs/cli.

@@ -33,9 +33,7 @@ export const TestRunEvidence = z.object({
   failed: z.number(),
   skipped: z.number(),
   durationMs: z.number(),
-  tests: z
-    .array(z.object({ file: z.string(), title: z.string(), status: z.string() }))
-    .max(50),
+  tests: z.array(z.object({ file: z.string(), title: z.string(), status: z.string() })).max(50),
 });
 
 export const CommandEvidence = z.object({

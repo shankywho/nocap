@@ -18,7 +18,14 @@ const verdict = {
   status: "verified",
   reason: "reverted src/retry.ts → 2/2 tests fail",
   evidence: [
-    { kind: "file", path: "test/retry.test.ts", status: "M", additions: 12, deletions: 0, previousPath: null },
+    {
+      kind: "file",
+      path: "test/retry.test.ts",
+      status: "M",
+      additions: 12,
+      deletions: 0,
+      previousPath: null,
+    },
   ],
   flags: [],
   bitecheck: null,
@@ -89,9 +96,15 @@ describe("claim and verdict schemas", () => {
   });
 
   it("parses flags with a known severity", () => {
-    expect(Flag.parse({ rule: "skip_added", severity: "warn", path: "a.test.ts", line: 4, detail: "it.skip" }).rule).toBe(
-      "skip_added",
-    );
+    expect(
+      Flag.parse({
+        rule: "skip_added",
+        severity: "warn",
+        path: "a.test.ts",
+        line: 4,
+        detail: "it.skip",
+      }).rule,
+    ).toBe("skip_added");
   });
 });
 

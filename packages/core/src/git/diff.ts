@@ -1,7 +1,8 @@
 import gitdiffParser, { type Change, type File as ParsedFile } from "gitdiff-parser";
 
 /** gitdiff-parser ships CommonJS with an ESM-shaped .d.ts; narrow it once here. */
-const parseUnifiedDiff = (gitdiffParser as unknown as { parse(source: string): ParsedFile[] }).parse;
+const parseUnifiedDiff = (gitdiffParser as unknown as { parse(source: string): ParsedFile[] })
+  .parse;
 import type { GitPort } from "../ports.js";
 import type { ChangeSet, ChangedFile, ChangeStatus, DiffHunk, DiffLine } from "./types.js";
 

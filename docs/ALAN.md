@@ -3,7 +3,7 @@
 ## Install
 
 1. Add the `plugins/nocap` folder to your Alan workspace (or install the `nocap` plugin from the marketplace).
-2. The plugin starts the MCP server with `npx -y nocap mcp`. If your Alan setup only accepts remote servers, run `nocap mcp` yourself and add it through *Add custom connector*.
+2. The plugin starts the MCP server with `npx -y @shankywho/nocap mcp`. If your Alan setup only accepts remote servers, run `nocap mcp` yourself and add it through *Add custom connector*.
 3. Agents pick up the `nocap-verify` skill automatically.
 
 ## What the agent calls

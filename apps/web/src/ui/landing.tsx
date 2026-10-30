@@ -62,12 +62,12 @@ export function TerminalReceipt() {
 }
 
 const AGENTS: Record<string, string> = {
-  "Claude Code": "npx nocap init claude --write",
-  Codex: "npx nocap init --all   # AGENTS.md protocol block",
-  Cursor: "npx nocap init --all   # .cursor MCP entry + rules",
-  OpenCode: "npx nocap init --all   # opencode MCP entry",
-  "Gemini CLI": "npx nocap init --all   # GEMINI.md block + MCP entry",
-  Alan: "npx nocap init --all   # installs the nocap plugin",
+  "Claude Code": "npx @shankywho/nocap init claude --write",
+  Codex: "npx @shankywho/nocap init --all   # AGENTS.md protocol block",
+  Cursor: "npx @shankywho/nocap init --all   # .cursor MCP entry + rules",
+  OpenCode: "npx @shankywho/nocap init --all   # opencode MCP entry",
+  "Gemini CLI": "npx @shankywho/nocap init --all   # GEMINI.md block + MCP entry",
+  Alan: "npx @shankywho/nocap init --all   # installs the nocap plugin",
 };
 
 export function AgentTabs() {

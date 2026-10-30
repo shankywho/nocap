@@ -12,7 +12,7 @@ export const PROTOCOL = `<!-- nocap:start -->
 4. If it fails, call \`get_repair\`, fix the items (never delete, skip or weaken tests; write \`Retracted: <quote>\` for claims you drop) and call \`verify_claims\` again.
 <!-- nocap:end -->`;
 
-const MCP_ENTRY = { command: "npx", args: ["-y", "nocap", "mcp"] };
+const MCP_ENTRY = { command: "npx", args: ["-y", "@shankywho/nocap", "mcp"] };
 const MARK = /<!-- nocap:start -->[\s\S]*?<!-- nocap:end -->/;
 
 export interface InitEnv {
@@ -71,7 +71,7 @@ async function mcpServersJson(agent: string, file: string, key: string, entry: u
 
 /** Upserts a [mcp_servers.nocap] table without a TOML library: replaces just that table, keeps everything else. */
 export function upsertCodexToml(existing: string): string | null {
-  const table = `[mcp_servers.nocap]\ncommand = "npx"\nargs = ["-y", "nocap", "mcp"]\n`;
+  const table = `[mcp_servers.nocap]\ncommand = "npx"\nargs = ["-y", "@shankywho/nocap", "mcp"]\n`;
   const re = /^\[mcp_servers\.nocap\][^\n]*\n(?:(?!\[)[^\n]*\n?)*/m;
   if (re.test(existing)) {
     const replaced = existing.replace(re, table + (existing.match(re)?.[0].endsWith("\n\n") ? "\n" : ""));
@@ -106,7 +106,7 @@ export async function planInit(env: InitEnv): Promise<Change[]> {
   }
   if (agents.includes("cursor")) changes.push(await mcpServersJson("cursor", at(".cursor/mcp.json"), "mcpServers", MCP_ENTRY));
   if (agents.includes("opencode")) {
-    changes.push(await mcpServersJson("opencode", at("opencode.json"), "mcp", { type: "local", command: ["npx", "-y", "nocap", "mcp"], enabled: true }));
+    changes.push(await mcpServersJson("opencode", at("opencode.json"), "mcp", { type: "local", command: ["npx", "-y", "@shankywho/nocap", "mcp"], enabled: true }));
   }
   if (agents.includes("gemini")) changes.push(await mcpServersJson("gemini", at(".gemini/settings.json"), "mcpServers", MCP_ENTRY));
   if (agents.includes("codex")) {

@@ -18,7 +18,7 @@ export default function Docs() {
 
       <H id="install">Install</H>
       <P>Needs Node 20+ and a git repository. No account. Try it on a built-in scenario first.</P>
-      <Pre>{"npx nocap demo toothless\nnpx nocap check --summary summary.md"}</Pre>
+      <Pre>{"npx @shankywho/nocap demo toothless\nnpx @shankywho/nocap check --summary summary.md"}</Pre>
 
       <H id="cli">CLI reference</H>
       <P>Generated from the commander help text. Exit codes: 0 pass, 1 contradicted, 2 usage or input error, 3 MIXED with --strict.</P>
@@ -29,21 +29,21 @@ export default function Docs() {
 
       <H id="claude-code">Claude Code hook</H>
       <P>A Stop hook checks the agent&apos;s final message. It reports by default. Set NOCAP_BLOCK=1 to block the agent on a ✗ (at most twice per session).</P>
-      <Pre>{"npx nocap init claude --write          # project .claude/settings.json\nnpx nocap init claude --write --user   # ~/.claude/settings.json"}</Pre>
+      <Pre>{"npx @shankywho/nocap init claude --write          # project .claude/settings.json\nnpx @shankywho/nocap init claude --write --user   # ~/.claude/settings.json"}</Pre>
 
       <P>Codex and Gemini CLI have hooks too (payload shapes unverified; see DECISIONS.md). Codex runs <code>notify</code> with the JSON as its last argument and cannot be blocked, so nocap only reports. Gemini&apos;s AfterAgent hook can deny, and does so with NOCAP_BLOCK=1.</P>
-      <Pre>{'# ~/.codex/config.toml\nnotify = ["npx", "-y", "nocap", "hook", "codex"]\n\n# Gemini CLI settings: AfterAgent hook command\nnpx -y nocap hook gemini'}</Pre>
+      <Pre>{'# ~/.codex/config.toml\nnotify = ["npx", "-y", "@shankywho/nocap", "hook", "codex"]\n\n# Gemini CLI settings: AfterAgent hook command\nnpx -y @shankywho/nocap hook gemini'}</Pre>
 
       <H id="mcp">MCP server</H>
       <P>Seven tools over stdio: verify_claims, get_repair, bitecheck, check_scope, ledger_facts, ledger_check, scorecard.</P>
-      <Pre>{'{ "mcpServers": { "nocap": { "command": "npx", "args": ["-y", "nocap", "mcp"] } } }'}</Pre>
-      <P>One command wires every agent it finds: <code>npx nocap init --all</code> (dry run by default; add --write).</P>
+      <Pre>{'{ "mcpServers": { "nocap": { "command": "npx", "args": ["-y", "@shankywho/nocap", "mcp"] } } }'}</Pre>
+      <P>One command wires every agent it finds: <code>npx @shankywho/nocap init --all</code> (dry run by default; add --write).</P>
 
       <H id="alan">Alan plugin</H>
       <P>Add <code>plugins/nocap</code> to your Alan workspace. The agent calls ledger_facts at the start of a multi-agent task, bitecheck after writing tests, verify_claims before saying done, and get_repair after a fail. Results map to Alan&apos;s test report: PASS, FAIL and MIXED become pass, fail and mixed.</P>
 
       <H id="pr-mode">PR mode</H>
-      <P>Paste a public PR on the landing page or POST /api/verify-pr. PR mode is static: CI status stands in for the test run, and tests_added, bug_fixed and build_pass are marked ! because proving them needs execution. Run <code>npx nocap check</code> locally for the full proof.</P>
+      <P>Paste a public PR on the landing page or POST /api/verify-pr. PR mode is static: CI status stands in for the test run, and tests_added, bug_fixed and build_pass are marked ! because proving them needs execution. Run <code>npx @shankywho/nocap check</code> locally for the full proof.</P>
 
       <H id="config">Configuration</H>
       <P>Optional <code>.nocaprc.json</code> at the repo root.</P>

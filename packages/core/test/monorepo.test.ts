@@ -232,3 +232,67 @@ describe("nocap never installs dependencies", () => {
     expect(state).toContain("node_modules");
   }, 60_000);
 });
+
+describe("build only when needed; uncommitted-file failures are not failures", () => {
+  it("importedWorkspaceNames follows relative imports, including ESM-style .js specifiers for .ts files", async () => {
+    const { importedWorkspaceNames } = await import("../src/git/workspace");
+    const dir = join(tmp, "imports");
+    put(dir, "test/t.test.ts", 'import { x } from "../src/x.js";\nimport "vitest";\n');
+    put(dir, "src/x.ts", 'import { y } from "./deep/y";\nexport const x = y;\n');
+    put(dir, "src/deep/y/index.ts", 'import { a } from "@ws/a/sub";\nexport const y = a;\n');
+    const names = await importedWorkspaceNames(new NodeFs(), dir, ["test/t.test.ts"], ["@ws/a", "@ws/b"]);
+    expect([...names]).toEqual(["@ws/a"]);
+    expect([...(await importedWorkspaceNames(new NodeFs(), dir, ["src/deep/y/index.ts"], ["@ws/b"]))]).toEqual([]);
+  });
+
+  it("Bitecheck does not run the workspace build when the selected tests never reach built output", async () => {
+    const dir = workspace("ws-nobuild", true);
+    // a build that would fail if anyone ran it
+    put(dir, "package.json", JSON.stringify({ name: "root", private: true, workspaces: ["packages/*"], scripts: { test: "vitest run", build: "node -e \"process.exit(1)\"" } }));
+    put(dir, "packages/c/package.json", JSON.stringify({ name: "@ws/c", type: "module" }));
+    put(dir, "packages/c/src/c.js", "export const c = () => 1;\n");
+    git(dir, "add", "-A");
+    git(dir, "commit", "-q", "-m", "c");
+    put(dir, "packages/c/src/c.js", "export const c = () => 2;\n");
+    put(dir, "packages/c/test/c.test.js", `import { expect, it } from "vitest";\nimport { c } from "../src/c.js";\nit("c is two", () => expect(c()).toBe(2));\n`);
+    const { receipt } = await verifyLocal({ repoPath: dir, summary: "Added tests for c in packages/c/test/c.test.js.", exec: true, offline: true, save: false }, { ...ENV, NOCAP_OFFLINE: "1" });
+    expect(claim(receipt, "tests_added")?.bitecheck?.outcome).toBe("bites");
+  }, 240_000);
+
+  it("a test that fails only in a clean checkout, because it needs an uncommitted file, is `!`, never ✗", async () => {
+    const dir = join(tmp, "uncommitted");
+    put(dir, "package.json", JSON.stringify({ name: "u", type: "module", scripts: { test: "vitest run" } }));
+    put(dir, ".gitignore", "node_modules\ngen\n");
+    put(dir, "test/ok.test.js", `import { expect, it } from "vitest";\nit("ok", () => expect(1).toBe(1));\n`);
+    put(dir, "test/gen.test.js", `import { readFileSync } from "node:fs";\nimport { expect, it } from "vitest";\nit("reads generated data", () => expect(readFileSync(new URL("../gen/data.json", import.meta.url), "utf8")).toContain("ok"));\n`);
+    git(dir, "init", "-q", "-b", "main");
+    git(dir, "add", "-A");
+    git(dir, "commit", "-q", "-m", "base");
+    symlinkSync(join(ROOT, "node_modules"), join(dir, "node_modules"), "junction");
+    put(dir, "gen/data.json", '{"v":"ok"}\n'); // generated, gitignored: present in place, absent in a clean checkout
+    put(dir, "NOTES.md", "dirty tree so --head HEAD cannot run in place\n");
+    const summary = "All 2 tests pass.";
+    const head = git(dir, "rev-parse", "HEAD");
+    const inPlace = (await verifyLocal({ repoPath: dir, summary, exec: true, offline: true, save: false }, { ...ENV, NOCAP_OFFLINE: "1" })).receipt;
+    expect(claim(inPlace, "tests_pass")?.status).toBe("verified");
+    const bare = (await verifyLocal({ repoPath: dir, summary, head, exec: true, offline: true, save: false }, { ...ENV, NOCAP_OFFLINE: "1" })).receipt;
+    const v = claim(bare, "tests_pass");
+    expect(v?.status).toBe("unverifiable");
+    expect(v?.reason).toMatch(/depend on uncommitted files|depends on uncommitted/);
+    expect(bare.overall).not.toBe("FAIL");
+  }, 240_000);
+
+  it("a genuinely failing test still fails in place and is ✗", async () => {
+    const dir = join(tmp, "really-failing");
+    put(dir, "package.json", JSON.stringify({ name: "r", type: "module", scripts: { test: "vitest run" } }));
+    put(dir, ".gitignore", "node_modules\n");
+    put(dir, "test/bad.test.js", `import { expect, it } from "vitest";\nit("bad", () => expect(1).toBe(2));\n`);
+    git(dir, "init", "-q", "-b", "main");
+    git(dir, "add", "-A");
+    git(dir, "commit", "-q", "-m", "base");
+    symlinkSync(join(ROOT, "node_modules"), join(dir, "node_modules"), "junction");
+    put(dir, "NOTES.md", "x\n");
+    const { receipt } = await verifyLocal({ repoPath: dir, summary: "All tests pass.", exec: true, offline: true, save: false }, { ...ENV, NOCAP_OFFLINE: "1" });
+    expect(claim(receipt, "tests_pass")?.status).toBe("contradicted");
+  }, 120_000);
+});

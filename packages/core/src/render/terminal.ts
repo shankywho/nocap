@@ -65,7 +65,8 @@ export function renderTerminal(receipt: Receipt, opts: TerminalOptions = {}): st
     if (e.kind === "file") out.push(`${"UNDISCLOSED".padEnd(15)} ${e.path}  ${e.status} +${e.additions} −${e.deletions}   (changed, never mentioned)`);
   }
   const t = receipt.totals;
-  const model = receipt.model && !receipt.model.degraded && receipt.model.provider !== "offline" ? ` · ${receipt.model.id}@${receipt.model.provider}` : "";
+  const live = receipt.model && !receipt.model.degraded && receipt.model.provider !== "offline";
+  const model = live && receipt.model ? ` · ${receipt.model.id.split("/").pop()}@${receipt.model.provider}` : " · offline";
   out.push(
     `${"RESULT".padEnd(15)} ${paint(receipt.overall, receipt.overall === "PASS" ? "green" : receipt.overall === "FAIL" ? "red" : "yellow")} · ${t.verified} verified · ${t.contradicted} contradicted · ${t.unverifiable} unverifiable · ${(receipt.durationMs / 1000).toFixed(1)}s${model}`,
   );

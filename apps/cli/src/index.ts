@@ -11,6 +11,7 @@ import { runInitAll } from "./commands/initAll.js";
 import { runLoop } from "./commands/loop.js";
 import { runHandoff, runScorecard } from "./commands/team.js";
 import { runBitecheck, runChain } from "./commands/chain.js";
+import { runConfig } from "./commands/config.js";
 import { runDemo } from "./commands/demo.js";
 import { runPublish } from "./commands/publish.js";
 import { runRepair } from "./commands/repair.js";
@@ -129,6 +130,11 @@ export function buildProgram(onExit: (code: number) => void = (code) => process.
     .command("scorecard")
     .description("per agent+model accuracy from local receipts")
     .action(async () => onExit(await runScorecard()));
+
+  program
+    .command("config <action> [args...]")
+    .description("set or show settings: `config set llm-key <key>`, `config get` (the key is never printed)")
+    .action((action: string, args: string[]) => onExit(runConfig(action, args)));
 
   program
     .command("repair [receiptFile]")

@@ -9,4 +9,4 @@ NOCAP  receipt ID  ·  agent: mock  ·  base BASE → (HEAD)
 ──────────────────────────────────────────────────────────────────────────────
 UNDISCLOSED     test/parser.test.ts  M +5 −1   (changed, never mentioned)
 UNDISCLOSED     src/parser.ts  M +2 −9   (changed, never mentioned)
-RESULT          MIXED · 0 verified · 0 contradicted · 2 unverifiable · 0.0s
+RESULT          MIXED · 0 verified · 0 contradicted · 2 unverifiable · 0.0s · offline

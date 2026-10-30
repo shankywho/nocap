@@ -1,72 +1,80 @@
 "use client";
 import { useCallback, useEffect, useRef, useState } from "react";
 
-export function Logo({ size = 26 }: { size?: number }) {
+/* Logo: a square outline with one diagonal slash that turns into a check on hover. Colour follows the text colour. */
+export function Mark({ size = 20 }: { size?: number }) {
   return (
-    <svg width={size} height={size} viewBox="0 0 32 32" aria-hidden>
-      <rect x="1.5" y="1.5" width="29" height="29" rx="7" fill="var(--foreground)" />
-      <path d="M9 6.75h11l3 3v15.5H9z" fill="var(--paper)" />
-      <path
-        d="M20 6.75v3h3"
-        fill="none"
-        stroke="var(--muted)"
-        strokeWidth="1.2"
-        strokeLinejoin="round"
-      />
-      <path
-        d="M12 14.25h8M12 17.5h5"
-        fill="none"
-        stroke="var(--foreground)"
-        strokeWidth="1.4"
-        strokeLinecap="round"
-        opacity=".7"
-      />
-      <path
-        d="M10.75 22.25 22 11"
-        fill="none"
-        stroke="var(--accent)"
-        strokeWidth="2.4"
-        strokeLinecap="round"
-      />
+    <svg className="mark" width={size} height={size} viewBox="0 0 20 20" aria-hidden fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="square">
+      <rect x="1.5" y="1.5" width="17" height="17" />
+      <path className="slash" d="M5.5 14.5 L14.5 5.5" />
+      <path className="check" d="M5 10.5 L8.5 14 L15 6.5" />
     </svg>
   );
 }
 
-/** A code-native wordmark that stays crisp at every size. */
-export function Brand({ size = "base" }: { size?: "base" | "small" }) {
-  const text = size === "small" ? "text-sm" : "text-base";
-  const icon = size === "small" ? 20 : 25;
+export function Logo({ size = 20 }: { size?: number }) {
   return (
-    <span className="flex items-center gap-2.5" aria-label="no-cap">
-      <Logo size={icon} />
-      <span className={`${text} font-semibold tracking-[-0.06em]`}>
-        no<span className="mx-[0.12em] text-accent">—</span>
-        <span className="font-serif font-medium italic">cap</span>
-      </span>
+    <span className="inline-flex items-center gap-2 font-mono text-[18px] font-semibold lowercase leading-none">
+      <Mark size={size} />
+      nocap
     </span>
   );
 }
 
-export function CopyPill({ text }: { text: string }) {
-  const [done, setDone] = useState(false);
+/* Navigation: transparent with cream text over the hero, then a wall-coloured bar with a brass rule. */
+export function Nav({ heroHeight = 0.88 }: { heroHeight?: number }) {
+  const [solid, setSolid] = useState(false);
+  useEffect(() => {
+    const on = () => setSolid(window.scrollY > window.innerHeight * heroHeight - 72);
+    on();
+    window.addEventListener("scroll", on, { passive: true });
+    return () => window.removeEventListener("scroll", on);
+  }, [heroHeight]);
   return (
-    <button
-      onClick={() => {
-        void navigator.clipboard?.writeText(text).then(() => {
-          setDone(true);
-          setTimeout(() => setDone(false), 1500);
-        });
-      }}
-      className="rounded-md bg-surface px-3.5 py-2 font-mono text-[13px] ring-1 ring-hairline hover:ring-foreground"
-      aria-label={`Copy ${text}`}
-    >
-      <span className="text-muted">$</span> {text}{" "}
-      <span className="ml-2 text-muted">{done ? "copied" : "copy"}</span>
-    </button>
+    <header className={`fixed inset-x-0 top-0 z-30 border-b ${solid ? "border-brass bg-wall" : "border-transparent bg-transparent"}`}>
+      <nav className="mx-auto flex max-w-6xl items-center justify-between px-5 py-3 sm:px-8" aria-label="Main">
+        <a href="/" className="text-cream" aria-label="nocap home">
+          <Logo />
+        </a>
+        <div className="hidden items-center gap-6 text-[15px] text-cream md:flex">
+          <a href="#no-1" className="hover:text-lamp">How it checks</a>
+          <a href="#no-2" className="hover:text-lamp">Bitecheck</a>
+          <a href="#no-3" className="hover:text-lamp">Repair loop</a>
+          <a href="#no-5" className="hover:text-lamp">Install</a>
+          <a href="/docs" className="hover:text-lamp">Docs</a>
+          <a href="https://github.com/shankywho/nocap" className="hover:text-lamp">GitHub</a>
+        </div>
+        <a href="#no-3" className="btn">Try the demo</a>
+      </nav>
+    </header>
   );
 }
 
-/* ── The galley: the agent's real summary, marked up claim by claim ─────────── */
+/* The install line: a small document with a copy button. */
+export function CopyPill({ text }: { text: string }) {
+  const [done, setDone] = useState(false);
+  return (
+    <span className="inline-flex max-w-full items-center gap-3 border border-brass bg-document px-3 py-2 font-mono text-[14px] text-ink" style={{ borderRadius: 2 }}>
+      <span className="overflow-x-auto whitespace-nowrap">
+        <span className="text-ink-muted">$</span> {text}
+      </span>
+      <button
+        onClick={() => {
+          void navigator.clipboard?.writeText(text).then(() => {
+            setDone(true);
+            setTimeout(() => setDone(false), 1500);
+          });
+        }}
+        className="shrink-0 border-l border-brass pl-3 text-[13px] underline underline-offset-4"
+        aria-label={`Copy ${text}`}
+      >
+        {done ? "copied" : "copy"}
+      </button>
+    </span>
+  );
+}
+
+/* The galley: the agent's real summary, marked up claim by claim on a cream document. */
 
 export interface GalleyClaim {
   id: string;
@@ -83,16 +91,8 @@ export interface GalleyData {
 }
 
 const GLYPH = { verified: "✓", contradicted: "✗", unverifiable: "!" } as const;
-const WORD = {
-  verified: "verified",
-  contradicted: "contradicted",
-  unverifiable: "unverifiable",
-} as const;
-const TONE = {
-  verified: "text-verified",
-  contradicted: "text-contradicted",
-  unverifiable: "text-unverifiable",
-} as const;
+const WORD = { verified: "verified", contradicted: "contradicted", unverifiable: "unverifiable" } as const;
+const TONE = { verified: "text-verified", contradicted: "text-contradicted", unverifiable: "text-unverifiable" } as const;
 
 export function Galley({ data, auto = true }: { data: GalleyData; auto?: boolean }) {
   const n = data.claims.length;
@@ -125,199 +125,142 @@ export function Galley({ data, auto = true }: { data: GalleyData; auto?: boolean
 
   const done = step > n;
   return (
-    <figure
-      className="crop evidence-sheet p-5 sm:p-7"
-      aria-label="Agent summary marked up claim by claim"
-    >
-      <figcaption className="mb-5 flex items-center justify-between font-mono text-[11px] uppercase tracking-[0.14em] text-muted">
-        <span>receipt {data.receiptId} · attempt 1</span>
-        <button
-          onClick={play}
-          className="uppercase underline-offset-4 hover:underline"
-          aria-label="Replay the markup"
-        >
-          replay ↻
-        </button>
-      </figcaption>
-      <p className="mb-3 font-mono text-[11px] uppercase tracking-[0.14em] text-muted">
-        agent says
-      </p>
-      <ol className="space-y-5">
-        {data.claims.map((c, i) => {
-          const marked = step > i;
-          const bad = marked && c.status === "contradicted";
-          const unsure = marked && c.status === "unverifiable";
-          return (
-            <li
-              key={c.id}
-              className="grid grid-cols-[1.75rem_1fr] gap-x-3 gap-y-1 sm:grid-cols-[1.75rem_1.25fr_1fr] sm:gap-x-5"
-            >
-              <span
-                aria-hidden
-                className={`pt-1 text-center font-mono text-lg leading-6 ${marked ? TONE[c.status] : "text-muted"}`}
-              >
-                {marked ? <span className="pop inline-block">{GLYPH[c.status]}</span> : "·"}
-              </span>
-              <p className="font-serif text-[1.2rem] leading-[1.45] sm:text-[1.3rem]">
-                {c.pre && <span className="text-muted">{c.pre} </span>}
-                <span
-                  className={
-                    c.status === "contradicted" ? "strike" : c.status === "unverifiable" ? "hl" : ""
-                  }
-                  data-on={bad || unsure ? "true" : "false"}
-                >
-                  {c.quote}
+    <figure className="m-0">
+      <div className="doc" aria-label="The agent's summary, checked claim by claim">
+        <p className="mb-4 font-mono text-[12px] text-ink-muted">The agent said:</p>
+        <ol className="m-0 list-none space-y-5 p-0">
+          {data.claims.map((c, i) => {
+            const marked = step > i;
+            const bad = marked && c.status === "contradicted";
+            const unsure = marked && c.status === "unverifiable";
+            return (
+              <li key={c.id} className="grid grid-cols-[1.5rem_1fr] gap-x-3 gap-y-1 sm:grid-cols-[1.5rem_1.2fr_1fr] sm:gap-x-5">
+                <span aria-hidden className={`pt-0.5 text-center font-mono text-lg leading-6 ${marked ? TONE[c.status] : "text-ink-muted"}`}>
+                  {marked ? <span className="pop inline-block">{GLYPH[c.status]}</span> : "·"}
                 </span>
-                <span className="sr-only"> {marked ? WORD[c.status] : "not checked yet"}</span>
-              </p>
-              <p
-                className={`col-start-2 font-mono text-[12px] leading-5 transition-opacity duration-500 sm:col-start-3 sm:pt-1.5 ${marked ? "opacity-100" : "opacity-0"} ${c.status === "contradicted" ? "text-contradicted" : "text-muted"}`}
-              >
-                {c.note}
-              </p>
-            </li>
-          );
-        })}
-      </ol>
-      <div className="mt-7 flex min-h-[4.5rem] items-center justify-between border-t border-dashed border-hairline pt-4">
-        <p className="font-mono text-[12px] text-muted">
-          {done
-            ? `${data.totals.verified} verified · ${data.totals.contradicted} contradicted · ${data.totals.unverifiable} unverifiable`
-            : "checking…"}
-        </p>
-        {done && (
-          <span
-            className={`stamp rounded-sm border-[3px] px-3 py-1 font-sans text-2xl font-extrabold uppercase tracking-wider ${data.overall === "PASS" ? "border-verified text-verified" : data.overall === "FAIL" ? "border-contradicted text-contradicted" : "border-unverifiable text-unverifiable"}`}
-          >
-            {data.overall}
-          </span>
-        )}
+                <p className="m-0 font-mono text-[15px] leading-[1.55]">
+                  {c.pre && <span className="text-ink-muted">{c.pre} </span>}
+                  <span className={c.status === "contradicted" ? "strike" : c.status === "unverifiable" ? "hl" : ""} data-on={bad || unsure ? "true" : "false"}>
+                    {c.quote}
+                  </span>
+                </p>
+                <p className={`col-start-2 m-0 font-mono text-[12px] leading-5 transition-opacity duration-500 sm:col-start-3 ${marked ? "opacity-100" : "opacity-0"} ${c.status === "contradicted" ? "text-contradicted" : "text-ink-muted"}`}>
+                  <b className={TONE[c.status]}>{marked ? `${GLYPH[c.status]} ${WORD[c.status]}` : "not checked yet"}</b>
+                  <br />
+                  {c.note}
+                </p>
+              </li>
+            );
+          })}
+        </ol>
+        <div className="mt-6 flex min-h-[4.5rem] items-center justify-between gap-3 border-t border-brass pt-4" style={{ borderTopStyle: "double", borderTopWidth: 3 }}>
+          <p className="m-0 font-mono text-[12px] text-ink-muted">
+            {done ? `${data.totals.verified} verified, ${data.totals.contradicted} contradicted, ${data.totals.unverifiable} unverifiable` : "checking"}
+          </p>
+          {done && (
+            <span className={`stamp border-[3px] px-3 py-1 font-heading text-2xl font-bold uppercase tracking-wider ${data.overall === "PASS" ? "border-verified text-verified" : data.overall === "FAIL" ? "border-contradicted text-contradicted" : "border-unverifiable text-unverifiable"}`}>
+              {data.overall}
+            </span>
+          )}
+        </div>
       </div>
+      <figcaption className="plate flex items-center justify-between gap-3">
+        <span>Receipt No. {data.receiptId} · attempt 1 · real output</span>
+        <button onClick={play} className="linklamp" aria-label="Replay the markup">replay</button>
+      </figcaption>
     </figure>
   );
 }
 
-/* ── Bitecheck: revert the change and watch the tests ───────────────────────── */
+/* Bitecheck: revert the change (or stub the new function) and watch the tests. */
 
-export interface RevertCase {
+export interface BiteCase {
   label: string;
+  /** Which kind of change the agent made. */
+  kind: "revert" | "stub";
+  file: string;
+  /** Lines shown with the change applied. */
+  changed: { sign: "+" | "-" | " "; text: string }[];
+  /** Lines shown after the revert, or after the body is stubbed. */
+  after: { sign: "+" | "-" | " "; text: string }[];
   tests: string[];
-  /** Whether the tests still pass after the revert. */
+  /** Whether the tests still pass after the revert or stub. */
   stillPass: boolean;
 }
 
-const DIFF = [
-  { t: "del", s: "const delayMs = 100;" },
-  { t: "add", s: "const delayMs = 100 * 2 ** (attempt - 1);" },
-] as const;
-
-export function RevertDemo({ cases }: { cases: RevertCase[] }) {
+export function RevertDemo({ cases }: { cases: BiteCase[] }) {
   const [which, setWhich] = useState(0);
-  const [reverted, setReverted] = useState(false);
-  const c = cases[which] as RevertCase;
-  const verdict = c.stillPass ? "toothless" : "bites";
+  const [applied, setApplied] = useState(false);
+  const c = cases[which] as BiteCase;
+  const verb = c.kind === "stub" ? "Stub the body" : "Revert the change";
+  const label = c.kind === "stub" ? "toothless (stub)" : "toothless";
+  const bites = c.kind === "stub" ? "bites (stub)" : "bites";
+  const lines = applied ? c.after : c.changed;
+  const pick = (i: number) => {
+    setWhich(i);
+    setApplied(false);
+  };
   return (
-    <div className="grid grid-cols-1 gap-5 lg:grid-cols-2 [&>*]:min-w-0">
-      <div className="crop rounded-sm bg-sheet p-5 shadow-[var(--shadow)] ring-1 ring-hairline">
-        <p className="mb-3 font-mono text-[11px] uppercase tracking-[0.14em] text-muted">
-          src/retry.ts · {reverted ? "reverted to base" : "agent's change"}
-        </p>
-        <pre className="overflow-x-auto text-[13px] leading-6">
-          {reverted ? (
-            <>
-              <span className="block text-muted">{"  const delayMs = 100;"}</span>
-              <span className="block text-muted line-through opacity-50">
-                {"+ const delayMs = 100 * 2 ** (attempt - 1);"}
-              </span>
-            </>
-          ) : (
-            DIFF.map((l, i) => (
-              <span
-                key={i}
-                className={`block ${l.t === "add" ? "text-verified" : "text-contradicted"}`}
-              >{`${l.t === "add" ? "+" : "-"} ${l.s}`}</span>
-            ))
-          )}
-        </pre>
-        <button
-          onClick={() => setReverted((v) => !v)}
-          className="mt-5 rounded-md bg-accent px-4 py-2 font-mono text-sm font-semibold text-on-accent"
-          aria-pressed={reverted}
-        >
-          {reverted ? "Restore the change" : "Revert src/retry.ts"}
-        </button>
+    <div>
+      <div className="mb-4 flex flex-wrap gap-2" role="group" aria-label="Example">
+        {cases.map((k, i) => (
+          <button key={k.label} onClick={() => pick(i)} aria-pressed={i === which} className={`border border-brass px-3 py-1.5 font-mono text-[13px] ${i === which ? "bg-lamp text-ink" : "bg-transparent text-cream"}`} style={{ borderRadius: 2 }}>
+            {k.label}
+          </button>
+        ))}
       </div>
-      <div className="crop rounded-sm bg-sheet p-5 shadow-[var(--shadow)] ring-1 ring-hairline">
-        <div className="mb-3 flex flex-wrap items-center gap-2">
-          {cases.map((k, i) => (
-            <button
-              key={k.label}
-              onClick={() => setWhich(i)}
-              aria-pressed={i === which}
-              className={`rounded px-2.5 py-1 font-mono text-[12px] ring-1 ${i === which ? "bg-foreground text-background ring-foreground" : "text-muted ring-hairline"}`}
-            >
-              {k.label}
+      <div className="grid grid-cols-1 gap-5 lg:grid-cols-2 [&>*]:min-w-0">
+        <div>
+          <div className="doc">
+            <p className="mb-3 font-mono text-[12px] text-ink-muted">{c.file} · {applied ? (c.kind === "stub" ? "body stubbed" : "reverted to base") : "the agent's change"}</p>
+            <pre className="m-0 overflow-x-auto font-mono text-[13px] leading-6">
+              {lines.map((l, i) => (
+                <span key={i} className={`block ${l.sign === "+" ? "text-verified" : l.sign === "-" ? "text-contradicted" : "text-ink-muted"}`}>{`${l.sign} ${l.text}`}</span>
+              ))}
+            </pre>
+            <button onClick={() => setApplied((v) => !v)} aria-pressed={applied} className="btn mt-5 font-mono text-[14px]">
+              {applied ? "Restore the change" : verb}
             </button>
-          ))}
+          </div>
+          <p className="plate">Source change · {c.kind === "stub" ? "new function, nothing to revert" : "existing function modified"}</p>
         </div>
-        <ul className="space-y-2 font-mono text-[13px]">
-          {c.tests.map((t) => {
-            const pass = !reverted || c.stillPass;
-            return (
-              <li key={t} className="flex gap-3">
-                <span className={`w-4 ${pass ? "text-verified" : "text-contradicted"}`} aria-hidden>
-                  {pass ? "✓" : "✗"}
-                </span>
-                <span>{t}</span>
-                <span className="sr-only">{pass ? "passes" : "fails"}</span>
-              </li>
-            );
-          })}
-        </ul>
-        <p className="mt-5 min-h-12 border-t border-dashed border-hairline pt-4 font-sans text-sm">
-          {!reverted ? (
-            <span className="text-muted">
-              Both pass on the agent&apos;s code. Revert the change to see whether they notice.
-            </span>
-          ) : c.stillPass ? (
-            <span className="text-contradicted">
-              <b>{verdict}.</b> They pass without the change, so they never tested it. nocap marks
-              the claim ✗.
-            </span>
-          ) : (
-            <span className="text-verified">
-              <b>{verdict}.</b> They fail without the change, so they depend on it. nocap marks the
-              claim ✓.
-            </span>
-          )}
-        </p>
+        <div>
+          <div className="doc">
+            <ul className="m-0 list-none space-y-2 p-0 font-mono text-[13px]">
+              {c.tests.map((t) => {
+                const pass = !applied || c.stillPass;
+                return (
+                  <li key={t} className="flex gap-3">
+                    <span className={`w-24 shrink-0 ${pass ? "text-verified" : "text-contradicted"}`}>{pass ? "✓ passes" : "✗ fails"}</span>
+                    <span>{t}</span>
+                  </li>
+                );
+              })}
+            </ul>
+            <p className="mb-0 mt-5 min-h-12 border-t border-brass pt-4 text-[15px]">
+              {!applied ? (
+                <span className="text-ink-muted">Both tests pass on the agent&apos;s code. Press the button to see whether they notice.</span>
+              ) : c.stillPass ? (
+                <span className="text-contradicted"><b>✗ {label}.</b> The tests pass without the change, so they never tested it. nocap marks the claim contradicted.</span>
+              ) : (
+                <span className="text-verified"><b>✓ {bites}.</b> The tests fail without the change, so they depend on it. nocap marks the claim verified.</span>
+              )}
+            </p>
+          </div>
+          <p className="plate">Test run · {c.tests.length} tests the agent added</p>
+        </div>
       </div>
     </div>
   );
 }
 
 const AGENTS: Record<string, { cmd: string; note: string }> = {
-  "Claude Code": {
-    cmd: "npx @shankywho/nocap init claude --write",
-    note: "Stop hook in .claude/settings.json. Report-only unless NOCAP_BLOCK=1.",
-  },
-  Codex: {
-    cmd: "npx @shankywho/nocap init --all --write --user",
-    note: "MCP entry in config.toml and an AGENTS.md protocol block.",
-  },
-  Cursor: {
-    cmd: "npx @shankywho/nocap init --all --write",
-    note: "MCP entry in .cursor/mcp.json.",
-  },
-  OpenCode: { cmd: "npx @shankywho/nocap init --all --write", note: "MCP entry in opencode.json." },
-  "Gemini CLI": {
-    cmd: "npx @shankywho/nocap init --all --write",
-    note: "MCP entry in .gemini/settings.json.",
-  },
-  Alan: {
-    cmd: "npx @shankywho/nocap init --all --write",
-    note: "Add plugins/nocap to your workspace; the skill calls verify_claims before done.",
-  },
+  "Claude Code": { cmd: "npx @shankywho/nocap init claude --write", note: "Adds a Stop hook to .claude/settings.json. It reports by default and blocks only with NOCAP_BLOCK=1." },
+  Codex: { cmd: "npx @shankywho/nocap init --all --write --user", note: "Adds an MCP entry to config.toml and a protocol block to AGENTS.md. Codex's notify hook can report but cannot block." },
+  Cursor: { cmd: "npx @shankywho/nocap init --all --write", note: "Adds an MCP entry to .cursor/mcp.json." },
+  OpenCode: { cmd: "npx @shankywho/nocap init --all --write", note: "Adds an MCP entry to opencode.json." },
+  "Gemini CLI": { cmd: "npx @shankywho/nocap init --all --write", note: "Adds an MCP entry to .gemini/settings.json. The AfterAgent hook can deny with NOCAP_BLOCK=1." },
+  Alan: { cmd: "npx @shankywho/nocap init --all --write", note: "Add plugins/nocap to your workspace. The skill calls verify_claims before the agent says it is done." },
 };
 
 export function AgentTabs() {
@@ -326,23 +269,18 @@ export function AgentTabs() {
   const a = AGENTS[active] as { cmd: string; note: string };
   return (
     <div>
-      <div role="tablist" aria-label="Agent" className="flex flex-wrap gap-2">
+      <div role="tablist" aria-label="Agent" className="mb-4 flex flex-wrap gap-2">
         {names.map((n) => (
-          <button
-            key={n}
-            role="tab"
-            aria-selected={n === active}
-            onClick={() => setActive(n)}
-            className={`rounded-md px-3 py-1.5 font-mono text-sm ring-1 ${n === active ? "bg-foreground text-background ring-foreground" : "text-muted ring-hairline hover:ring-foreground"}`}
-          >
+          <button key={n} role="tab" aria-selected={n === active} onClick={() => setActive(n)} className={`border border-brass px-3 py-1.5 font-mono text-[13px] ${n === active ? "bg-lamp text-ink" : "bg-transparent text-cream"}`} style={{ borderRadius: 2 }}>
             {n}
           </button>
         ))}
       </div>
-      <pre className="mt-3 overflow-x-auto rounded-md bg-surface p-4 text-sm ring-1 ring-hairline">
-        {a.cmd}
-      </pre>
-      <p className="mt-2 text-sm text-muted">{a.note}</p>
+      <div className="doc">
+        <pre className="m-0 overflow-x-auto font-mono text-[14px]">{a.cmd}</pre>
+        <p className="mb-0 mt-3 text-[15px] text-ink-muted">{a.note}</p>
+      </div>
+      <p className="plate">{active} · dry run by default; add --write to apply</p>
     </div>
   );
 }
@@ -350,44 +288,14 @@ export function AgentTabs() {
 export function PrForm() {
   const [url, setUrl] = useState("");
   const [summary, setSummary] = useState("");
+  const field = "w-full border border-brass bg-document px-3 py-2 font-mono text-[14px] text-ink";
   return (
-    <form
-      action="/verify"
-      method="get"
-      className="space-y-3"
-      onSubmit={(e) => {
-        if (!url.trim()) e.preventDefault();
-      }}
-    >
-      <label className="block text-sm text-muted" htmlFor="pr">
-        Public GitHub PR URL
-      </label>
-      <input
-        id="pr"
-        name="pr"
-        value={url}
-        onChange={(e) => setUrl(e.target.value)}
-        placeholder="https://github.com/owner/repo/pull/123"
-        className="w-full rounded-md bg-surface px-3 py-2 font-mono text-sm ring-1 ring-hairline"
-      />
-      <label className="block text-sm text-muted" htmlFor="summary">
-        Agent summary (optional, defaults to the PR description)
-      </label>
-      <textarea
-        id="summary"
-        name="summary"
-        value={summary}
-        onChange={(e) => setSummary(e.target.value)}
-        rows={3}
-        className="w-full rounded-md bg-surface px-3 py-2 font-mono text-sm ring-1 ring-hairline"
-      />
-      <button
-        type="submit"
-        disabled={!url.trim()}
-        className="rounded-md bg-accent px-4 py-2 font-mono text-sm font-semibold text-on-accent disabled:opacity-40"
-      >
-        Verify the PR
-      </button>
+    <form action="/verify" method="get" className="doc space-y-3" onSubmit={(e) => { if (!url.trim()) e.preventDefault(); }}>
+      <label className="block text-[15px] text-ink-muted" htmlFor="pr">Public GitHub pull request URL</label>
+      <input id="pr" name="pr" value={url} onChange={(e) => setUrl(e.target.value)} placeholder="https://github.com/owner/repo/pull/123" className={field} style={{ borderRadius: 2 }} />
+      <label className="block text-[15px] text-ink-muted" htmlFor="summary">Agent summary (optional, defaults to the PR description)</label>
+      <textarea id="summary" name="summary" value={summary} onChange={(e) => setSummary(e.target.value)} rows={3} className={field} style={{ borderRadius: 2 }} />
+      <button type="submit" disabled={!url.trim()} className="btn disabled:opacity-40">Check the pull request</button>
     </form>
   );
 }

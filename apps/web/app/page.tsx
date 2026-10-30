@@ -4,7 +4,7 @@ import { Brand, CopyPill, Galley, PrForm, type GalleyData } from "../src/ui/land
 import { StreamRun } from "../src/ui/StreamRun";
 
 export const dynamic = "force-dynamic";
-const REPO = "https://github.com/shankar7055/NoCap";
+const REPO = "https://github.com/shankywho/nocap";
 
 function galleyOf(r: Receipt): GalleyData {
   let at = 0;

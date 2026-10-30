@@ -6,7 +6,7 @@ import type { Env } from "@nocap/core/adapters";
 import * as tools from "./tools.js";
 
 export const MCP_SERVER_NAME = "nocap";
-export const MCP_SERVER_VERSION = "0.1.0";
+export const MCP_SERVER_VERSION = "0.1.1";
 
 export function mcpServerInfo(): { name: string; version: string } {
   return { name: MCP_SERVER_NAME, version: MCP_SERVER_VERSION };

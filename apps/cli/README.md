@@ -8,4 +8,4 @@ cd your-repo && pbpaste | npx @shankywho/nocap check
 npx @shankywho/nocap init --all --write
 ```
 
-Docs and source: https://github.com/shankar7055/NoCap
+Docs and source: https://github.com/shankywho/nocap

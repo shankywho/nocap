@@ -17,7 +17,7 @@ jobs:
         with:
           fetch-depth: 0
       - run: npm ci
-      - uses: shankar7055/NoCap/action@v0.1.0
+      - uses: shankywho/nocap/action@v0.1.1
         with:
           agent: copilot
 ```

@@ -1,0 +1,110 @@
+import { readFileSync } from "node:fs";
+import { describe, expect, it } from "vitest";
+
+const read = (rel: string) => readFileSync(new URL(`../${rel}`, import.meta.url), "utf8");
+const css = read("app/globals.css");
+
+function token(name: string): string {
+  const m = new RegExp(`--${name}:\\s*(#[0-9a-fA-F]{6})\\s*;`).exec(css);
+  if (!m) throw new Error(`token --${name} not found in globals.css`);
+  return (m[1] as string).toLowerCase();
+}
+
+/** WCAG 2.x relative luminance and contrast ratio. */
+function luminance(hex: string): number {
+  const [r, g, b] = [1, 3, 5].map((i) => {
+    const c = Number.parseInt(hex.slice(i, i + 2), 16) / 255;
+    return c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4;
+  }) as [number, number, number];
+  return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+}
+export const contrast = (a: string, b: string): number => {
+  const [hi, lo] = [luminance(a), luminance(b)].sort((x, y) => y - x) as [number, number];
+  return (hi + 0.05) / (lo + 0.05);
+};
+
+describe("study theme tokens match the spec", () => {
+  it("has the sampled palette", () => {
+    expect({ wall: token("wall"), desk: token("desk"), document: token("document"), text: token("text"), muted: token("muted"), ink: token("ink"), inkMuted: token("ink-muted"), lamp: token("lamp"), brass: token("brass"), verified: token("verified"), contradicted: token("contradicted"), unverifiable: token("unverifiable") }).toEqual({
+      wall: "#1a110b", desk: "#24170f", document: "#f1e6d0", text: "#f1e6d0", muted: "#b9a588", ink: "#1a110b", inkMuted: "#5c4a36", lamp: "#d8a45f", brass: "#a76d38", verified: "#2f5a3a", contradicted: "#8e2a1e", unverifiable: "#7a5600",
+    });
+  });
+});
+
+describe("WCAG contrast of every text pair the page uses is at least 4.5:1", () => {
+  const pairs: [string, string, string][] = [
+    ["text", "wall", "body text on the wall"],
+    ["text", "desk", "body text on the desk"],
+    ["muted", "wall", "secondary text on the wall"],
+    ["muted", "desk", "secondary text on the desk"],
+    ["lamp", "wall", "links, numbers and labels on the wall"],
+    ["lamp", "desk", "links, numbers and labels on the desk"],
+    ["ink", "lamp", "primary button text"],
+    ["ink", "document", "text on documents"],
+    ["ink-muted", "document", "secondary text on documents"],
+    ["verified", "document", "✓ verified on a document"],
+    ["contradicted", "document", "✗ contradicted on a document"],
+    ["unverifiable", "document", "! unverifiable on a document"],
+  ];
+  for (const [fg, bg, what] of pairs) {
+    it(`${what} (${fg} on ${bg})`, () => {
+      const ratio = contrast(token(fg), token(bg));
+      expect(ratio, `${fg} ${token(fg)} on ${bg} ${token(bg)} is ${ratio.toFixed(2)}:1`).toBeGreaterThanOrEqual(4.5);
+    });
+  }
+  it("computes known ratios correctly", () => {
+    expect(contrast("#000000", "#ffffff")).toBeCloseTo(21, 5);
+    expect(contrast("#777777", "#ffffff")).toBeCloseTo(4.48, 1);
+  });
+});
+
+describe("banned styles never appear in the landing files", () => {
+  const files = ["app/page.tsx", "app/globals.css", "app/layout.tsx", "src/ui/landing.tsx", "src/ui/hero.tsx", "src/ui/StreamRun.tsx"];
+  const text = Object.fromEntries(files.map((f) => [f, read(f)]));
+  const each = (re: RegExp) => files.filter((f) => re.test(text[f] as string));
+
+  it("no italics", () => expect(each(/italic|<em>|<i>|font-style:\s*oblique/i)).toEqual([]));
+  it("no em dashes", () => expect(each(/—/)).toEqual([]));
+  it("no box-shadow, ring or shadow utilities (ring is a box-shadow)", () => expect(each(/box-shadow|\bshadow-|\bshadow\b|\bring(-|\b)/)).toEqual([]));
+  it("no blur, backdrop-filter or glow", () => expect(each(/blur|backdrop-filter|\bglow\b|drop-shadow/i)).toEqual([]));
+  it("no glass or emoji", () => {
+    expect(each(/\bglass/i)).toEqual([]);
+    expect(each(/\p{Extended_Pictographic}(?<![✓✗])/u).filter((f) => /[\u{1F300}-\u{1FAFF}]/u.test(text[f] as string))).toEqual([]);
+  });
+  it("no gradient except the two in the hero", () => {
+    const counts = files.map((f) => [f, (text[f]!.match(/gradient\(/g) ?? []).length] as const);
+    expect(counts.filter(([f, n]) => n > 0 && f !== "src/ui/hero.tsx")).toEqual([]);
+    expect(counts.find(([f]) => f === "src/ui/hero.tsx")?.[1]).toBe(2);
+  });
+  it("the hero gradients are exactly the two specified", () => {
+    const hero = text["src/ui/hero.tsx"] as string;
+    expect(hero).toContain("linear-gradient(90deg, rgba(14,8,4,.88) 0%, rgba(14,8,4,.55) 38%, rgba(14,8,4,0) 62%)");
+    expect(hero).toContain('height: "18%"');
+    expect(hero).toContain("#1a110b 100%)");
+  });
+  it("none of the banned marketing words", () => expect(each(/revolutioni[sz]e|supercharge|seamless|blazing|AI-powered/i)).toEqual([]));
+  it("headings are never italic and the fonts are the specified families", () => {
+    const layout = text["app/layout.tsx"] as string;
+    expect(layout).toContain("OldStandardTT-400.woff2");
+    expect(layout).toContain("OldStandardTT-700.woff2");
+    expect(layout).toContain("IBMPlexSans.woff2");
+    expect(layout).toContain("IBMPlexMono-600.woff2");
+    expect(layout).not.toMatch(/style:\s*"[a-z]*italic"/);
+  });
+});
+
+describe("hero image", () => {
+  it("uses the generated art, priority, sizes 100vw, cover, and the right focal point", () => {
+    const hero = read("src/ui/hero.tsx");
+    expect(hero).toContain("priority: true");
+    expect(hero).toContain('sizes: "100vw"');
+    expect(hero).toContain('objectFit: "cover"');
+    expect(hero).toContain('objectPosition: "70% 50%"');
+    expect(hero).toContain("/art/hero-{w}.webp");
+  });
+  it("has the caption, in the muted colour, bottom right", () => {
+    const hero = read("src/ui/hero.tsx");
+    expect(hero).toContain("After Thomas Eakins, The Chess Players (1876) · The Met, public domain · canvas extended for this page");
+    expect(hero).toContain("bottom-3 right-4");
+  });
+});

@@ -10,7 +10,7 @@ export const label = { verified: "VERIFIED", contradicted: "CONTRADICTED", unver
 
 export function Badge({ overall }: { overall: Receipt["overall"] }) {
   const c = overall === "PASS" ? "text-verified" : overall === "FAIL" ? "text-contradicted" : "text-unverifiable";
-  return <span className={`rounded border border-hairline px-2 py-0.5 font-mono text-xs font-semibold ${c}`}>{overall}</span>;
+  return <span className={`border border-brass bg-document px-2 py-0.5 font-mono text-xs font-semibold ${c}`} style={{ borderRadius: 2 }}>{overall}</span>;
 }
 
 export function Chip({ children }: { children: React.ReactNode }) {

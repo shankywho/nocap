@@ -144,7 +144,7 @@ export function Galley({ data, auto = true }: { data: GalleyData; auto?: boolean
                     {c.quote}
                   </span>
                 </p>
-                <p className={`col-start-2 m-0 font-mono text-[12px] leading-5 transition-opacity duration-500 sm:col-start-3 ${marked ? "opacity-100" : "opacity-0"} ${c.status === "contradicted" ? "text-contradicted" : "text-ink-muted"}`}>
+                <p className={`col-start-2 m-0 font-mono text-[12px] leading-5 sm:col-start-3 ${marked ? "" : "invisible"} ${c.status === "contradicted" ? "text-contradicted" : "text-ink-muted"}`}>
                   <b className={TONE[c.status]}>{marked ? `${GLYPH[c.status]} ${WORD[c.status]}` : "not checked yet"}</b>
                   <br />
                   {c.note}

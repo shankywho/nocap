@@ -1,4 +1,5 @@
 import { getImageProps } from "next/image";
+import { preload } from "react-dom";
 import { CopyPill } from "./landing";
 
 /*
@@ -16,20 +17,19 @@ export interface HeroStats {
 
 export function Hero({ stats }: { stats: HeroStats }) {
   const common = { alt: "", fill: true, priority: true, sizes: "100vw", quality: 90, loader, style: { objectFit: "cover" as const, objectPosition: "70% 50%" } };
+  // The webp is served so the largest contentful paint is the hero webp. The .avif files are generated for hosts that prefer them.
   const webp = getImageProps({ ...common, src: "/art/hero-{w}.webp" });
-  const avif = getImageProps({ ...common, src: "/art/hero-{w}.avif" });
+  // Discover the hero image from the HTML head, before the body is parsed.
+  preload(webp.props.src as string, { as: "image", imageSrcSet: webp.props.srcSet, imageSizes: "100vw", fetchPriority: "high" });
   return (
     <section className="relative isolate min-h-[88vh] overflow-hidden bg-wall" aria-labelledby="hero-title">
-      <picture>
-        <source type="image/avif" srcSet={avif.props.srcSet} sizes="100vw" />
-        <img {...webp.props} alt="" />
-      </picture>
+      <img {...webp.props} alt="" />
       {/* gradient 1: a legibility scrim on the left only */}
       <div aria-hidden className="absolute inset-0" style={{ background: "linear-gradient(90deg, rgba(14,8,4,.88) 0%, rgba(14,8,4,.55) 38%, rgba(14,8,4,0) 62%)" }} />
       {/* gradient 2: the bottom 18% fades into the wall so the room continues into the page */}
       <div aria-hidden className="absolute inset-x-0 bottom-0" style={{ height: "18%", background: "linear-gradient(180deg, rgba(26,17,11,0) 0%, #1a110b 100%)" }} />
       <div className="relative mx-auto flex min-h-[88vh] max-w-6xl items-center px-5 pb-24 pt-28 sm:px-8">
-        <div className="w-full bg-[rgba(14,8,4,0.72)] p-5 sm:p-0 md:w-[45%] md:bg-transparent">
+        <div className="w-full bg-[rgba(14,8,4,0.62)] p-5 sm:p-0 md:w-[45%] md:bg-transparent">
           <h1 id="hero-title" className="m-0 text-[40px] font-normal leading-[1.08] text-cream sm:text-[54px]">
             Check what your coding agent says it did.
           </h1>

@@ -27,4 +27,4 @@ export interface TestRunResult {
   environmentError: string | null;
 }
 
-export type RunnerName = "vitest" | "jest" | "pytest" | "custom";
+export type RunnerName = "vitest" | "jest" | "pytest" | "node" | "custom";

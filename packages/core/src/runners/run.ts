@@ -1,6 +1,7 @@
 import { join } from "node:path";
 import type { ExecPort, FsPort } from "../ports.js";
 import { parseJestJson, type ParsedRun } from "./parseJest.js";
+import { junitReporterMissing, nodeTestArgs, parseNodeTestScript } from "./nodeTest.js";
 import { parseJunit } from "./parseJunit.js";
 import type { RunnerName, TestRunResult } from "./types.js";
 
@@ -30,6 +31,41 @@ function empty(runner: string, exitCode: number, stderr: string, ms: number, err
   };
 }
 
+/** `node --test`: one process per file so each testcase can be attributed to its file (Node's junit output has none). */
+async function runNodeTests(opts: RunTestsOptions, outDir: string, started: number): Promise<TestRunResult> {
+  let script = null as ReturnType<typeof parseNodeTestScript>;
+  try {
+    const pkg = JSON.parse(await opts.fs.readFile(join(opts.cwd, "package.json"))) as { scripts?: { test?: string } };
+    script = parseNodeTestScript(pkg.scripts?.test ?? "");
+  } catch {
+    // handled below
+  }
+  if (!script) return empty("node", 0, "", 0, "no `node --test` script found in package.json");
+  const pattern = opts.titles && opts.titles.length > 0 ? opts.titles.join("|") : null;
+  const groups = opts.files && opts.files.length > 0 ? opts.files.map((f) => [f]) : [[] as string[]];
+  const tests: TestRunResult["tests"] = [];
+  const suiteErrors: TestRunResult["suiteErrors"] = [];
+  let exitCode = 0;
+  let stderr = "";
+  for (const [i, group] of groups.entries()) {
+    const outFile = join(outDir, `node-${i}.xml`);
+    const result = await opts.exec.run("node", nodeTestArgs(script, outFile, group, pattern), { cwd: opts.cwd, env: opts.env, timeoutMs: opts.timeoutMs });
+    const ms = Date.now() - started;
+    if (result.exitCode === 124) return empty("node", 124, result.stderr, ms, `timed out after ${opts.timeoutMs}ms`);
+    if (result.exitCode === 127) return empty("node", 127, result.stderr, ms, "runner could not be started");
+    if (junitReporterMissing(result.stderr)) return empty("node", result.exitCode, result.stderr, ms, `this Node (${process.version}) has no junit test reporter; use a newer Node or --test-cmd`);
+    exitCode = exitCode || result.exitCode;
+    stderr += result.stderr;
+    const parsed = (await opts.fs.exists(outFile)) ? parseJunit(await opts.fs.readFile(outFile)) : null;
+    const file = group[0] ?? "";
+    if (parsed) tests.push(...parsed.tests.map((t) => ({ ...t, file })));
+    else if (result.exitCode !== 0 && file) suiteErrors.push({ file, message: tail(result.stderr || result.stdout) });
+  }
+  if (tests.length === 0 && suiteErrors.length === 0) return empty("node", exitCode, stderr, Date.now() - started, "runner produced no parsable results");
+  const count = (s: string) => tests.filter((t) => t.status === s).length;
+  return { runner: "node", total: tests.length, passed: count("passed"), failed: count("failed"), skipped: count("skipped"), tests, suiteErrors, durationMs: Date.now() - started, exitCode, stderrTail: tail(stderr), environmentError: null };
+}
+
 /** Always uses file reporters, never stdout JSON. */
 export async function runTests(opts: RunTestsOptions): Promise<TestRunResult> {
   const outDir = await opts.fs.mkdtemp("nocap-out-");
@@ -49,6 +85,8 @@ export async function runTests(opts: RunTestsOptions): Promise<TestRunResult> {
         args: [],
         shell: true,
       };
+    } else if (opts.runner === "node") {
+      return await runNodeTests(opts, outDir, started);
     } else if (opts.runner === "vitest") {
       cmd = {
         file: "npx",

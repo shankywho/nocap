@@ -1,5 +1,6 @@
 import { join } from "node:path";
 import type { FsPort } from "../ports.js";
+import { isNodeTestScript } from "./nodeTest.js";
 import type { RunnerName } from "./types.js";
 
 export async function detectRunner(fs: FsPort, root: string): Promise<RunnerName | null> {
@@ -22,6 +23,7 @@ export async function detectRunner(fs: FsPort, root: string): Promise<RunnerName
       const script = pkg.scripts?.test ?? "";
       if (/\bvitest\b/.test(script)) return "vitest";
       if (/\bjest\b/.test(script)) return "jest";
+      if (isNodeTestScript(script)) return "node";
     } catch {
       // fall through to python detection
     }

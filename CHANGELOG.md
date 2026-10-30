@@ -2,6 +2,18 @@
 
 All notable changes to this project are documented here. The format follows Keep a Changelog and the project uses Semantic Versioning.
 
+## [0.1.2]
+
+### Fixed
+- **No more false accusations from setup problems.** `tests_pass` runs the project's own runner in place when head is the working tree (a snapshot, or a clean HEAD) and uses a worktree only for Bitecheck. A run whose failures are all module or package resolution errors, or that collects under half of what the project collects in place, is `!` (environment), never ✗. Bitecheck head runs that cannot resolve packages are `environment`, never `broken_on_head`.
+- Bitecheck in a monorepo links every workspace package's `node_modules` into the worktree (workspace siblings point at the worktree's copy), and rebuilds workspace output before the head run and again after the revert.
+- One source of truth for test totals: a file that fails to load counts as one failed test, so `passed + failed + skipped = total` in every report.
+- `test_config_changed` fires only on real config files (vitest/jest config, pytest.ini, pyproject.toml, conftest.py, tsconfig*, package.json test scripts, .github/workflows). The skip, only, trivial-assertion, forced-exit and env-sniffing rules ignore matches inside string and template literals, comments and regex literals.
+
+### Added
+- Checkable housekeeping claims: "bumped version to X" is checked against the version diff, and "regenerated goldens/snapshots" attaches the changed golden or snapshot files as evidence (so they stop showing as UNDISCLOSED).
+- `nocap demo --live` uses the configured key and names the model in RESULT; the default demo stays deterministic and offline.
+
 ## [0.1.1]
 
 ### Fixed

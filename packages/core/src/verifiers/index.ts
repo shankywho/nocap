@@ -44,13 +44,29 @@ export async function verifyClaim(claim: Claim, ctx: VerifyContext): Promise<Ver
   }
 }
 
-/** Changed files that no claim's evidence mentions; test and config files first. */
-export function undisclosedChanges(files: ChangedFile[], verdicts: Verdict[]) {
+/**
+ * Changed files that no claim covers; test and config files first. A claim covers a
+ * file when it names the path, or its evidence or Bitecheck mentions it.
+ */
+export function undisclosedChanges(
+  files: ChangedFile[],
+  verdicts: Verdict[],
+  claims: Claim[] = [],
+) {
   const seen = new Set<string>();
-  for (const v of verdicts) for (const e of v.evidence) if ("path" in e) seen.add(e.path);
+  for (const claim of claims) for (const p of claim.paths) seen.add(p.replace(/^\.\//, ""));
+  for (const v of verdicts) {
+    for (const e of v.evidence) {
+      if ("path" in e) seen.add(e.path);
+      if (e.kind === "testRun") for (const t of e.tests) seen.add(t.file);
+    }
+    for (const t of v.bitecheck?.selectedTests ?? []) seen.add(t.file);
+    for (const p of v.bitecheck?.revertedFiles ?? []) seen.add(p);
+  }
+  const covered = (path: string) => seen.has(path) || [...seen].some((s) => !s.includes("*") && s.includes("/") === false && path.endsWith(`/${s}`));
   const rank = (f: ChangedFile) => (isTestPath(f.path) ? 0 : isConfigPath(f.path) ? 1 : 2);
   return files
-    .filter((f) => !seen.has(f.path))
+    .filter((f) => !covered(f.path))
     .sort((a, b) => rank(a) - rank(b) || a.path.localeCompare(b.path))
     .map(fileEvidence);
 }

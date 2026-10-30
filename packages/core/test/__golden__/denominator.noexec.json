@@ -1,0 +1,271 @@
+{
+  "schemaVersion": 1,
+  "id": "ID",
+  "runId": "RUN",
+  "createdAt": "T",
+  "input": {
+    "mode": "local",
+    "agent": "mock",
+    "summary": "Done. Added exponential backoff to `withRetry` in src/retry.ts.\nAdded tests for the retry backoff in test/retry.test.ts.\nDidn't touch auth. All 13 tests pass.\n",
+    "repo": null,
+    "pr": null,
+    "base": "BASE",
+    "head": "HEAD",
+    "headIsSnapshot": false,
+    "alan": null
+  },
+  "chain": {
+    "chainId": "rundenomin",
+    "parentId": null,
+    "attempt": 1,
+    "items": [],
+    "outcome": "first_attempt"
+  },
+  "actor": {
+    "agent": "mock",
+    "model": null,
+    "role": null
+  },
+  "claims": [
+    {
+      "claim": {
+        "id": "c1",
+        "quote": "Added exponential backoff to `withRetry` in src/retry.ts.",
+        "type": "file_modified",
+        "subject": "exponential backoff",
+        "keywords": [
+          "exponential",
+          "backoff",
+          "delay",
+          "retry"
+        ],
+        "paths": [
+          "src/retry.ts"
+        ],
+        "symbols": [
+          "withRetry"
+        ],
+        "count": null,
+        "command": null,
+        "span": [
+          6,
+          63
+        ]
+      },
+      "verdict": {
+        "status": "verified",
+        "reason": "src/retry.ts was modified (+2 -2).",
+        "evidence": [
+          {
+            "kind": "file",
+            "path": "src/retry.ts",
+            "status": "M",
+            "additions": 2,
+            "deletions": 2,
+            "previousPath": null
+          }
+        ],
+        "flags": [],
+        "bitecheck": null,
+        "repair": null
+      }
+    },
+    {
+      "claim": {
+        "id": "c2",
+        "quote": "Added tests for the retry backoff in test/retry.test.ts.",
+        "type": "tests_added",
+        "subject": "retry backoff",
+        "keywords": [
+          "retry",
+          "backoff",
+          "attempt",
+          "delay",
+          "exponential"
+        ],
+        "paths": [
+          "test/retry.test.ts"
+        ],
+        "symbols": [],
+        "count": null,
+        "command": null,
+        "span": [
+          64,
+          120
+        ]
+      },
+      "verdict": {
+        "status": "unverifiable",
+        "reason": "Reverting the change to test the tests needs execution, which is disabled (--no-exec).",
+        "evidence": [],
+        "flags": [],
+        "bitecheck": null,
+        "repair": null
+      }
+    },
+    {
+      "claim": {
+        "id": "c3",
+        "quote": "Didn't touch auth.",
+        "type": "scope_none",
+        "subject": "auth",
+        "keywords": [
+          "auth",
+          "login",
+          "session",
+          "token",
+          "jwt",
+          "oauth",
+          "passport",
+          "middleware"
+        ],
+        "paths": [],
+        "symbols": [],
+        "count": null,
+        "command": null,
+        "span": [
+          121,
+          139
+        ]
+      },
+      "verdict": {
+        "status": "verified",
+        "reason": "No file mapped to 'auth' changed.",
+        "evidence": [
+          {
+            "kind": "mapping",
+            "concept": "auth",
+            "globs": [
+              "src/auth/**",
+              "test/session.test.ts"
+            ],
+            "matchedFiles": 2,
+            "source": "keyword"
+          }
+        ],
+        "flags": [],
+        "bitecheck": null,
+        "repair": null
+      }
+    },
+    {
+      "claim": {
+        "id": "c4",
+        "quote": "All 13 tests pass.",
+        "type": "tests_pass",
+        "subject": null,
+        "keywords": [],
+        "paths": [],
+        "symbols": [],
+        "count": 13,
+        "command": null,
+        "span": [
+          140,
+          158
+        ]
+      },
+      "verdict": {
+        "status": "unverifiable",
+        "reason": "Re-running the suite needs execution, which is disabled (--no-exec).",
+        "evidence": [],
+        "flags": [
+          {
+            "rule": "test_file_deleted",
+            "severity": "warn",
+            "path": "test/legacy.test.ts",
+            "line": null,
+            "detail": "test/legacy.test.ts was deleted"
+          },
+          {
+            "rule": "assertions_removed",
+            "severity": "warn",
+            "path": "test/legacy.test.ts",
+            "line": 1,
+            "detail": "3 more assertions removed than added"
+          },
+          {
+            "rule": "test_count_dropped",
+            "severity": "warn",
+            "path": "",
+            "line": null,
+            "detail": "6 → 4 test declarations"
+          }
+        ],
+        "bitecheck": null,
+        "repair": null
+      }
+    }
+  ],
+  "undisclosed": [
+    {
+      "kind": "file",
+      "path": "test/legacy.test.ts",
+      "status": "D",
+      "additions": 0,
+      "deletions": 16,
+      "previousPath": null
+    }
+  ],
+  "globalFlags": [],
+  "totals": {
+    "verified": 2,
+    "contradicted": 0,
+    "unverifiable": 2,
+    "flags": 3
+  },
+  "overall": "MIXED",
+  "model": {
+    "provider": "offline",
+    "id": "offline",
+    "degraded": false
+  },
+  "trace": [
+    {
+      "step": "resolve",
+      "ms": 0,
+      "status": "ok",
+      "detail": "3be732b..8c82cb8"
+    },
+    {
+      "step": "diff",
+      "ms": 0,
+      "status": "ok",
+      "detail": "3 files"
+    },
+    {
+      "step": "extract",
+      "ms": 0,
+      "status": "ok",
+      "detail": "4 claims"
+    },
+    {
+      "step": "scope",
+      "ms": 0,
+      "status": "ok",
+      "detail": "1 concepts"
+    },
+    {
+      "step": "suite",
+      "ms": 0,
+      "status": "skipped",
+      "detail": "execution disabled"
+    },
+    {
+      "step": "verify",
+      "ms": 0,
+      "status": "ok",
+      "detail": "4 verdicts"
+    },
+    {
+      "step": "tamper",
+      "ms": 0,
+      "status": "ok",
+      "detail": "3 flags"
+    }
+  ],
+  "durationMs": 0,
+  "tool": {
+    "name": "nocap",
+    "version": "0.1.0"
+  }
+}

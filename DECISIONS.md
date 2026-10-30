@@ -143,3 +143,16 @@ Anything that could not be confirmed against the source is marked **UNVERIFIED**
 - Decision: `packages/core/src/adapters/local.ts` (`verifyLocal`, `bitecheckLocal`, `checkScopeLocal`, rc and receipt-store helpers) is exported from `@nocap/core/adapters`. The pure engine in `src/` still never reads `process.env`; the shells hand `env` in as an argument.
 - Alternatives: duplicating the wiring in each shell.
 - Verified: not applicable (design decision); covered by CLI, hook and MCP tests.
+
+## 2026-10-26 · P9 · Memory store only; Prisma and Playwright deferred
+
+- Context: `prisma` and `@playwright/test` are not in the offline pnpm store, so they cannot be installed here.
+- Decision: the web app talks to a `ReceiptStore` interface (`apps/web/src/server/store.ts`) with a `MemoryStore` seeded from `examples/*.json`. A Prisma implementation of the same interface (schema in NOCAP_BUILD.md §7.1) is the live-mode follow-up. Rate limits are in-memory. Integration test 10 runs the route handlers directly in Vitest; the Playwright smoke (test 11) is not written.
+- Alternatives: hand-rolling a Postgres client; rejected as more code than the interface swap.
+- Verified: `apps/web/test/*.test.ts`, `next build` passes, `curl` against `next dev` for pages, SSE and OG images.
+
+## 2026-10-26 · P9 · PR mode is its own static pipeline
+
+- Context: `verify()` needs a git checkout; the web has only GitHub patches.
+- Decision: `static/prVerify.ts` builds the ChangeSet from PR file patches (`changeSetFromPatches`), reuses the same extractor, scope mapper, verifiers and policy, and takes `tests_pass` from CI check runs. tests_added, bug_fixed and build_pass stay `!`. `readFileAtHead` returns null, so `symbol_added` is `!` in PR mode.
+- Verified: `apps/web/test/demo.test.ts` (CI ✓, auth ✗, tests_added !).

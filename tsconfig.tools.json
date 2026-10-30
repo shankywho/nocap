@@ -1,0 +1,27 @@
+{
+  "extends": "./tsconfig.base.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "types": [
+      "node"
+    ],
+    "allowImportingTsExtensions": true,
+    "baseUrl": ".",
+    "paths": {
+      "@nocap/core": [
+        "packages/core/src/index.ts"
+      ],
+      "@nocap/mcp": [
+        "packages/mcp/src/server.ts"
+      ]
+    }
+  },
+  "include": [
+    "scripts/**/*.ts",
+    "packages/*/test/**/*.ts",
+    "apps/*/test/**/*.ts",
+    "vitest.config.ts"
+  ]
+}

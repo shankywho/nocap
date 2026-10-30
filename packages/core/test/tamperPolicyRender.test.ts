@@ -115,7 +115,7 @@ describe("renderers", () => {
   it("terminal without colour has no escape codes", () => {
     const out = renderTerminal(receipt);
     expect(out).not.toContain("\u001b");
-    expect(out).toContain("✗ Added tests for retry");
+    expect(out).toContain('✗ CONTRADICTED  "Added tests for retry"');
     expect(renderTerminal(receipt, { color: true })).toContain("\u001b[31m");
   });
   it("markdown and json", () => {

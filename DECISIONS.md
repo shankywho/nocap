@@ -129,3 +129,17 @@ Anything that could not be confirmed against the source is marked **UNVERIFIED**
 - Decision: on any model failure, retry once with the error text appended ("Your JSON failed validation: … Return corrected JSON only."), then fall back to the deterministic extractor and set `model.degraded = true`. Provider errors are retried as well; the cost is one extra call on an outage, not a crash.
 - Alternatives: retrying only zod errors (leaves invalid JSON unhandled); retrying indefinitely (unbounded latency).
 - Verified: `llmExtractor.test.ts` covers a successful repair and the double-failure fallback.
+
+## 2026-10-26 · P8 · `init --all` writes Codex TOML by hand
+
+- Context: the spec names `smol-toml` for the Codex `config.toml` edit; the package could not be installed (offline store).
+- Decision: upsert only the `[mcp_servers.nocap]` table with a small text routine that leaves every other line untouched; Codex user config is written only with `--write --user`. JSON configs are merged with `.bak` backups and are never overwritten when unparsable.
+- Alternatives: adding `smol-toml` when the registry is reachable; the text upsert is covered by tests and can be swapped without changing behaviour.
+- Verified: unit tests in `apps/cli/test/initAll.test.ts` (fake HOME, stubbed PATH). The per-agent config shapes are the spec's best-known formats and are **UNVERIFIED** against each agent's current docs.
+
+## 2026-10-26 · P8 · Shared composition root in core
+
+- Context: the CLI, Stop hook and MCP server all need the same adapter wiring.
+- Decision: `packages/core/src/adapters/local.ts` (`verifyLocal`, `bitecheckLocal`, `checkScopeLocal`, rc and receipt-store helpers) is exported from `@nocap/core/adapters`. The pure engine in `src/` still never reads `process.env`; the shells hand `env` in as an argument.
+- Alternatives: duplicating the wiring in each shell.
+- Verified: not applicable (design decision); covered by CLI, hook and MCP tests.

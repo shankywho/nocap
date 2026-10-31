@@ -65,4 +65,16 @@ describe("MCP server", () => {
     const r = await client.callTool({ name: "verify_claims", arguments: { summary: "x y z", repo_path: "/definitely/not/a/repo" } });
     expect(textOf(r)[0]).toMatch(/nocap could not verify/);
   }, 60_000);
+
+  it("verify_external_claim is exposed and returns unverifiable when no API key is provided", async () => {
+    const r = await client.callTool({
+      name: "verify_external_claim",
+      arguments: { claim: "cookies() is async in Next.js 15" },
+    });
+    const [md, json] = textOf(r);
+    expect(md).toContain("UNVERIFIABLE via Anakin MCP");
+    const data = JSON.parse(json ?? "{}");
+    expect(data.status).toBe("unverifiable");
+  });
 });
+

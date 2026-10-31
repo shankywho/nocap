@@ -94,9 +94,17 @@ export function buildProgram(onExit: (code: number) => void = (code) => process.
     .option("--all", "detect every installed agent and configure MCP + hooks + AGENTS.md")
     .option("--write", "apply the changes (default is a dry run)")
     .option("--user", "allow writing user-level config (needed for Codex)")
-    .action(async (agent: string | undefined, opts: { all?: boolean; write?: boolean; user?: boolean }) => {
+    .option("--anakin", "configure remote Anakin MCP (https://mcp.anakin.io/mcp) alongside nocap for live web doc verification")
+    .action(async (agent: string | undefined, opts: { all?: boolean; write?: boolean; user?: boolean; anakin?: boolean }) => {
       if (opts.all || agent === "all") {
-        return onExit(await runInitAll({ write: opts.write === true, user: opts.user === true, env: { cwd: process.cwd(), home: process.env.HOME ?? "", path: process.env.PATH ?? "" } }));
+        return onExit(
+          await runInitAll({
+            write: opts.write === true,
+            user: opts.user === true,
+            anakin: opts.anakin === true,
+            env: { cwd: process.cwd(), home: process.env.HOME ?? "", path: process.env.PATH ?? "" },
+          }),
+        );
       }
       if (agent !== "claude") {
         process.stderr.write(`nocap: init '${agent}' is not supported yet.\n`);

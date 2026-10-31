@@ -8,6 +8,9 @@ const nextConfig = {
   reactStrictMode: true,
   poweredByHeader: false,
   typedRoutes: false,
+  images: {
+    qualities: [75, 90],
+  },
   outputFileTracingRoot: path.resolve(__dirname, "../../"),
   outputFileTracingIncludes: {
     // files the pages read at request time (seeded examples, the demo PR, the eval table, the dogfood receipts)

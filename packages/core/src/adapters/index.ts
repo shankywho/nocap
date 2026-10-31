@@ -8,3 +8,4 @@ export * from "./local.js";
 export * from "./github.mock.js";
 export * from "./github.fetch.js";
 export * from "./config.js";
+export * from "./anakin.js";

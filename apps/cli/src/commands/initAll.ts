@@ -12,7 +12,30 @@ export const PROTOCOL = `<!-- nocap:start -->
 4. If it fails, call \`get_repair\`, fix the items (never delete, skip or weaken tests; write \`Retracted: <quote>\` for claims you drop) and call \`verify_claims\` again.
 <!-- nocap:end -->`;
 
-const MCP_ENTRY = { command: "npx", args: ["-y", "@shankywho/nocap", "mcp"] };
+export const PROTOCOL_ANAKIN = `<!-- nocap:start -->
+## Verify your work with nocap & Anakin MCP
+1. At the start of a multi-agent task, call \`ledger_facts\`: treat CONTRADICTED and unverified teammate claims as unknown.
+2. For external APIs, SDKs, or docs, verify claims against live web documentation using Anakin MCP or nocap \`verify_external_claim\`.
+3. After writing tests, call \`bitecheck\` on them: a test that passes without your change proves nothing.
+4. Before you say "done", call \`verify_claims\` with your summary.
+5. If it fails, call \`get_repair\`, fix the items (never delete, skip or weaken tests; write \`Retracted: <quote>\` for claims you drop) and call \`verify_claims\` again.
+<!-- nocap:end -->`;
+
+export const MCP_ENTRY = { command: "npx", args: ["-y", "@shankywho/nocap", "mcp"] };
+export const ANAKIN_MCP_ENTRY = {
+  url: "https://mcp.anakin.io/mcp",
+  headers: {
+    Authorization: "Bearer ${ANAKIN_API_KEY}",
+  },
+};
+export const ANAKIN_OPENCODE_ENTRY = {
+  type: "remote",
+  url: "https://mcp.anakin.io/mcp",
+  headers: {
+    Authorization: "Bearer ${ANAKIN_API_KEY}",
+  },
+  enabled: true,
+};
 const MARK = /<!-- nocap:start -->[\s\S]*?<!-- nocap:end -->/;
 
 export interface InitEnv {
@@ -60,42 +83,91 @@ async function readJson(file: string): Promise<Json | null> {
 
 const same = (a: unknown, b: unknown) => JSON.stringify(a) === JSON.stringify(b);
 
-async function mcpServersJson(agent: string, file: string, key: string, entry: unknown): Promise<Change> {
+async function mcpServersJson(
+  agent: string,
+  file: string,
+  key: string,
+  entries: Record<string, unknown>,
+): Promise<Change> {
   const existing = await readJson(file);
   if (existing === null) return { agent, file, action: "skipped: existing file is not valid JSON", next: null };
   const section = { ...((existing[key] as Json | undefined) ?? {}) };
-  if (same(section.nocap, entry)) return { agent, file, action: "already configured", next: null };
-  section.nocap = entry;
-  return { agent, file, action: `add nocap to ${key}`, next: `${JSON.stringify({ ...existing, [key]: section }, null, 2)}\n` };
-}
-
-/** Upserts a [mcp_servers.nocap] table without a TOML library: replaces just that table, keeps everything else. */
-export function upsertCodexToml(existing: string): string | null {
-  const table = `[mcp_servers.nocap]\ncommand = "npx"\nargs = ["-y", "@shankywho/nocap", "mcp"]\n`;
-  const re = /^\[mcp_servers\.nocap\][^\n]*\n(?:(?!\[)[^\n]*\n?)*/m;
-  if (re.test(existing)) {
-    const replaced = existing.replace(re, table + (existing.match(re)?.[0].endsWith("\n\n") ? "\n" : ""));
-    return replaced === existing ? null : replaced;
+  let changed = false;
+  const added: string[] = [];
+  for (const [name, entry] of Object.entries(entries)) {
+    if (!same(section[name], entry)) {
+      section[name] = entry;
+      changed = true;
+      added.push(name);
+    }
   }
-  return `${existing}${existing === "" || existing.endsWith("\n\n") ? "" : existing.endsWith("\n") ? "\n" : "\n\n"}${table}`;
+  if (!changed) return { agent, file, action: "already configured", next: null };
+  return {
+    agent,
+    file,
+    action: `add ${added.join(" + ")} to ${key}`,
+    next: `${JSON.stringify({ ...existing, [key]: section }, null, 2)}\n`,
+  };
 }
 
-async function protocolFile(agent: string, file: string, createIfMissing: boolean): Promise<Change | null> {
+/** Upserts [mcp_servers.nocap] (and optionally [mcp_servers.anakin]) without a TOML library. */
+export function upsertCodexToml(existing: string, anakin = false): string | null {
+  const table = `[mcp_servers.nocap]\ncommand = "npx"\nargs = ["-y", "@shankywho/nocap", "mcp"]\n`;
+  const anakinTable = `[mcp_servers.anakin]\nurl = "https://mcp.anakin.io/mcp"\nhttp_headers = { Authorization = "Bearer \${ANAKIN_API_KEY}" }\n`;
+  const re = /^\[mcp_servers\.nocap\][^\n]*\n(?:(?!\[)[^\n]*\n?)*/m;
+  const reAnakin = /^\[mcp_servers\.anakin\][^\n]*\n(?:(?!\[)[^\n]*\n?)*/m;
+
+  let current = existing;
+  if (re.test(current)) {
+    current = current.replace(re, table + (current.match(re)?.[0].endsWith("\n\n") ? "\n" : ""));
+  } else {
+    current = `${current}${current === "" || current.endsWith("\n\n") ? "" : current.endsWith("\n") ? "\n" : "\n\n"}${table}`;
+  }
+
+  if (anakin) {
+    if (reAnakin.test(current)) {
+      current = current.replace(reAnakin, anakinTable + (current.match(reAnakin)?.[0].endsWith("\n\n") ? "\n" : ""));
+    } else {
+      current = `${current}${current === "" || current.endsWith("\n\n") ? "" : current.endsWith("\n") ? "\n" : "\n\n"}${anakinTable}`;
+    }
+  }
+
+  return current === existing ? null : current;
+}
+
+async function protocolFile(agent: string, file: string, createIfMissing: boolean, anakin = false): Promise<Change | null> {
   const present = await exists(file);
   if (!present && !createIfMissing) return null;
+  const proto = anakin ? PROTOCOL_ANAKIN : PROTOCOL;
   const current = present ? await readFile(file, "utf8") : "";
-  const next = MARK.test(current) ? current.replace(MARK, PROTOCOL) : `${current}${current === "" || current.endsWith("\n\n") ? "" : current.endsWith("\n") ? "\n" : "\n\n"}${PROTOCOL}\n`;
+  const next = MARK.test(current)
+    ? current.replace(MARK, proto)
+    : `${current}${current === "" || current.endsWith("\n\n") ? "" : current.endsWith("\n") ? "\n" : "\n\n"}${proto}\n`;
   if (next === current) return { agent, file, action: "already configured", next: null };
   return { agent, file, action: MARK.test(current) ? "update nocap block" : "add nocap block", next };
 }
 
-export async function planInit(env: InitEnv): Promise<Change[]> {
+export async function planInit(env: InitEnv, opts?: { anakin?: boolean }): Promise<Change[]> {
   const agents = await detectAgents(env);
   const changes: Change[] = [];
   const at = (p: string) => join(env.cwd, p);
+  const withAnakin = opts?.anakin === true;
+
+  const standardMcp = withAnakin
+    ? { nocap: MCP_ENTRY, anakin: ANAKIN_MCP_ENTRY }
+    : { nocap: MCP_ENTRY };
+
+  const opencodeMcp = withAnakin
+    ? {
+        nocap: { type: "local", command: ["npx", "-y", "@shankywho/nocap", "mcp"], enabled: true },
+        anakin: ANAKIN_OPENCODE_ENTRY,
+      }
+    : {
+        nocap: { type: "local", command: ["npx", "-y", "@shankywho/nocap", "mcp"], enabled: true },
+      };
 
   if (agents.includes("claude")) {
-    changes.push(await mcpServersJson("claude", at(".mcp.json"), "mcpServers", MCP_ENTRY));
+    changes.push(await mcpServersJson("claude", at(".mcp.json"), "mcpServers", standardMcp));
     const settingsFile = at(".claude/settings.json");
     const existing = await readJson(settingsFile);
     if (existing === null) changes.push({ agent: "claude", file: settingsFile, action: "skipped: existing file is not valid JSON", next: null });
@@ -104,29 +176,30 @@ export async function planInit(env: InitEnv): Promise<Change[]> {
       changes.push({ agent: "claude", file: settingsFile, action: merged.changed ? "add Stop hook" : "already configured", next: merged.changed ? `${JSON.stringify(merged.settings, null, 2)}\n` : null });
     }
   }
-  if (agents.includes("cursor")) changes.push(await mcpServersJson("cursor", at(".cursor/mcp.json"), "mcpServers", MCP_ENTRY));
+  if (agents.includes("cursor")) changes.push(await mcpServersJson("cursor", at(".cursor/mcp.json"), "mcpServers", standardMcp));
   if (agents.includes("opencode")) {
-    changes.push(await mcpServersJson("opencode", at("opencode.json"), "mcp", { type: "local", command: ["npx", "-y", "@shankywho/nocap", "mcp"], enabled: true }));
+    changes.push(await mcpServersJson("opencode", at("opencode.json"), "mcp", opencodeMcp));
   }
-  if (agents.includes("gemini")) changes.push(await mcpServersJson("gemini", at(".gemini/settings.json"), "mcpServers", MCP_ENTRY));
+  if (agents.includes("gemini")) changes.push(await mcpServersJson("gemini", at(".gemini/settings.json"), "mcpServers", standardMcp));
   if (agents.includes("codex")) {
     const file = join(env.home, ".codex", "config.toml");
     const current = (await exists(file)) ? await readFile(file, "utf8") : "";
-    const next = upsertCodexToml(current);
-    changes.push({ agent: "codex", file, action: next ? "add [mcp_servers.nocap]" : "already configured", next, needsUser: true });
+    const next = upsertCodexToml(current, withAnakin);
+    const actionDesc = withAnakin ? "add [mcp_servers.nocap] + [mcp_servers.anakin]" : "add [mcp_servers.nocap]";
+    changes.push({ agent: "codex", file, action: next ? actionDesc : "already configured", next, needsUser: true });
   }
   if (agents.length > 0) {
-    const agentsMd = await protocolFile("all", at("AGENTS.md"), true);
+    const agentsMd = await protocolFile("all", at("AGENTS.md"), true, withAnakin);
     if (agentsMd) changes.push(agentsMd);
-    const claudeMd = await protocolFile("all", at("CLAUDE.md"), false);
+    const claudeMd = await protocolFile("all", at("CLAUDE.md"), false, withAnakin);
     if (claudeMd) changes.push(claudeMd);
   }
   return changes;
 }
 
-export async function runInitAll(opts: { write: boolean; user: boolean; env: InitEnv; out?: (t: string) => void }): Promise<number> {
+export async function runInitAll(opts: { write: boolean; user: boolean; anakin?: boolean; env: InitEnv; out?: (t: string) => void }): Promise<number> {
   const out = opts.out ?? ((t: string) => process.stdout.write(t));
-  const changes = await planInit(opts.env);
+  const changes = await planInit(opts.env, { anakin: opts.anakin });
   if (changes.length === 0) {
     out("No supported agents detected (looked for Claude Code, Codex, Cursor, OpenCode, Gemini CLI).\n");
     return 0;

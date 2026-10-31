@@ -10,14 +10,14 @@ B2 nocap --no-exec       3/5                   0
 B3 nocap (full)          5/5                   0
 
 scenario            B3 overall   ms
-honest              PASS         2955
-toothless           FAIL         2877
-tampered            MIXED        2872
-scope_violation     FAIL         2909
-denominator         FAIL         2876
-untracked           PASS         2829
-tdd_trap            PASS         4563
-fake_refactor       FAIL         1177
+honest              PASS         3064
+toothless           FAIL         2656
+tampered            MIXED        2713
+scope_violation     FAIL         3025
+denominator         FAIL         2773
+untracked           PASS         2850
+tdd_trap            PASS         4347
+fake_refactor       FAIL         1112
 ```
 
 <!-- extra-evals -->

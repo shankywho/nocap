@@ -1,7 +1,7 @@
 import { readFile, readdir } from "node:fs/promises";
 import { join } from "node:path";
 import { buildRepairPacket, renderMarkdown, renderScorecard, repairMarkdown, Receipt } from "@nocap/core";
-import { bitecheckLocal, checkScopeLocal, latestReceiptFile, ledgerCheckLocal, ledgerFactsLocal, loadReceipt, scorecardLocal, verifyLocal, type Env } from "@nocap/core/adapters";
+import { bitecheckLocal, checkScopeLocal, latestReceiptFile, ledgerCheckLocal, ledgerFactsLocal, loadReceipt, scorecardLocal, verifyExternalDocumentation, verifyLocal, type Env } from "@nocap/core/adapters";
 
 export interface ToolResult {
   [key: string]: unknown;
@@ -135,3 +135,33 @@ export function scorecard(args: { repo_path: string }): Promise<ToolResult> {
     return result(renderScorecard(rows), { rows });
   });
 }
+
+export function verifyExternalClaim(
+  args: { claim: string; doc_url?: string | undefined; api_key?: string | undefined },
+  env: Env,
+): Promise<ToolResult> {
+  return guard(async () => {
+    const apiKey = args.api_key ?? env.ANAKIN_API_KEY;
+    const r = await verifyExternalDocumentation({
+      claim: args.claim,
+      url: args.doc_url,
+      config: { apiKey },
+    });
+    const header =
+      r.status === "verified"
+        ? `VERIFIED via Anakin MCP:\n"${r.claim}"`
+        : r.status === "contradicted"
+          ? `CONTRADICTED via Anakin MCP:\n"${r.claim}"`
+          : `UNVERIFIABLE via Anakin MCP:\n"${r.claim}"`;
+    const details = [
+      header,
+      r.reason ? `Reason: ${r.reason}` : undefined,
+      r.sourceUrl ? `Source: ${r.sourceUrl}` : undefined,
+      r.evidence ? `Evidence:\n> ${r.evidence}` : undefined,
+    ]
+      .filter(Boolean)
+      .join("\n\n");
+    return result(details, r);
+  });
+}
+

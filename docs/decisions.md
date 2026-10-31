@@ -248,3 +248,14 @@ Anything that could not be confirmed against the source is marked **UNVERIFIED**
 - Stats: only measured numbers. The "< $0.01 per check" line was removed: receipts do not record token usage, so there is nothing to compute it from. The figure in the README is an estimate from list prices.
 - Dogfood receipts are shown in full (white-space: pre, a visible scrollbar, a caption hint, each line also in a `title`). A fade hint would need a gradient, which is banned.
 - Verified: Playwright (13), theme tests (33), Lighthouse on the production build: desktop 100 / 100 / 100 / 100, mobile 92 / 100 / 100 / 100.
+
+## 2026-10-31 · Integration · Anakin MCP (Action & Live Web Doc Verification Engine)
+
+- Context: Coding agents frequently claim compliance with external documentation (e.g. "migrated to Next.js 15 async cookies()", "used Stripe v2024 idempotency header"). While local tests may pass if mocked, nocap had a blindspot: it could not verify if an agent hallucinated external library signatures or deprecated APIs without live doc access.
+- Decision:
+  1. **Symbiotic Engine Pairing:** Anakin MCP (`https://mcp.anakin.io/mcp`) acts as the Action and Web Exploration Engine (web scraping, agentic search, crawling); nocap acts as the Verification and Proof Receipt Engine (Git diffs, Bitecheck, AST rules, proof ledger).
+  2. **Core Adapter:** `packages/core/src/adapters/anakin.ts` exposes `callAnakinTool` and `verifyExternalDocumentation`. Uses standard JSON-RPC with Bearer authentication (`ANAKIN_API_KEY`). Remains purely testable via dependency-injected `fetchFn`.
+  3. **MCP Tool Exposure:** `packages/mcp` exposes `verify_external_claim` alongside nocap's 7 local tools, allowing any MCP-compliant agent to verify external API specs live.
+  4. **Dual Harness Provisioning:** `nocap init --all --anakin` provisions both `nocap` and `anakin` MCP servers across `.mcp.json`, `.cursor/mcp.json`, `opencode.json`, `.gemini/settings.json`, and `AGENTS.md`.
+- Verified: `packages/core/test/anakin.test.ts` (5 tests), `packages/mcp/test/mcp.test.ts` (7 tests), `apps/cli/test/initAll.test.ts` (8 tests).
+

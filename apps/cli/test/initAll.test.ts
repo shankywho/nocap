@@ -81,6 +81,27 @@ describe("init --all (fake HOME, stubbed PATH)", () => {
     expect(out).toContain("not valid JSON");
     expect(await read("opencode.json")).toBe("{ not json");
   });
+
+  it("init --all --anakin configures paired Anakin MCP servers and protocol block", async () => {
+    let out = "";
+    await runInitAll({ write: true, user: true, anakin: true, env: { cwd: repo, home, path: bin }, out: (t) => (out += t) });
+    const mcpJson = JSON.parse(await read(".mcp.json"));
+    expect(mcpJson.mcpServers.nocap).toBeDefined();
+    expect(mcpJson.mcpServers.anakin).toEqual({
+      url: "https://mcp.anakin.io/mcp",
+      headers: { Authorization: "Bearer ${ANAKIN_API_KEY}" },
+    });
+
+    const cursorMcp = JSON.parse(await read(".cursor/mcp.json"));
+    expect(cursorMcp.mcpServers.anakin.url).toBe("https://mcp.anakin.io/mcp");
+
+    const geminiMcp = JSON.parse(await read(".gemini/settings.json"));
+    expect(geminiMcp.mcpServers.anakin.url).toBe("https://mcp.anakin.io/mcp");
+
+    const agentsMd = await read("AGENTS.md");
+    expect(agentsMd).toContain("Anakin MCP");
+    expect(agentsMd).toContain("verify_external_claim");
+  });
 });
 
 describe("upsertCodexToml", () => {
@@ -91,4 +112,14 @@ describe("upsertCodexToml", () => {
     expect(next).toContain("[x]\na = 1");
     expect(upsertCodexToml(next)).toBeNull();
   });
+
+  it("upserts both nocap and anakin tables when anakin is true", () => {
+    const old = '[mcp_servers.other]\ncommand = "other"\n';
+    const next = upsertCodexToml(old, true) ?? "";
+    expect(next).toContain("[mcp_servers.nocap]");
+    expect(next).toContain("[mcp_servers.anakin]");
+    expect(next).toContain("https://mcp.anakin.io/mcp");
+    expect(upsertCodexToml(next, true)).toBeNull();
+  });
 });
+

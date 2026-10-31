@@ -23,3 +23,4 @@ export { facts as ledgerFacts, check as ledgerCheck, renderFacts, isStale, type 
 export { aggregate, renderScorecard, SCORECARD_CAPTION, type ScoreRow } from "./scorecard/aggregate.js";
 export { prVerify, parsePrUrl, PrUrlError, type PrVerifyInput } from "./static/prVerify.js";
 export { changeSetFromPatches } from "./git/diff.js";
+export { ANAKIN_MCP_URL, callAnakinTool, verifyExternalDocumentation, type AnakinConfig, type AnakinToolCallResult, type ExternalDocVerification } from "./adapters/anakin.js";

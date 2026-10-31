@@ -154,6 +154,43 @@ const FAQ: [string, string][] = [
   ["Why not just use CI?", "CI reports that the suite is green. It cannot report that the new tests exercise the change or that the summary matches the diff. In our eval, CI alone caught 0 of 5 planted problems."],
   ["Which agents?", "Any agent that ends with a summary. Hooks and an MCP server cover Claude Code, Codex, Cursor, OpenCode, Gemini CLI and Alan."],
   ["What does ! mean?", "nocap could not check the claim, for example because the tests could not run in a bare checkout. It is never counted as a failure."],
+  ["How does the Anakin MCP integration work?", "nocap pairs with Anakin's remote MCP server (https://mcp.anakin.io/mcp). While nocap proves local git diffs, AST changes, and test bites, Anakin MCP scrapes live external documentation and SDK references. When an agent claims compliance with an external library or API signature, nocap verifies it against live web documentation to catch hallucinations before you merge."],
+];
+
+interface Sponsor {
+  name: string;
+  role: string;
+  highlight: string;
+  desc: string;
+  url: string;
+  linkText: string;
+}
+
+const SPONSORS: Sponsor[] = [
+  {
+    name: "Wispr Flow",
+    role: "Lead Partner",
+    highlight: "Workshop · 1 Mo Free",
+    desc: "Natural voice-first AI writing and coding for developers. Explore hands-on building with Wispr Flow and voice-driven agent workflows.",
+    url: "https://wisprflow.ai/?promo_code=WEMAKEDEVS",
+    linkText: "wisprflow.ai",
+  },
+  {
+    name: "WeMakeDevs",
+    role: "Presented By",
+    highlight: "Host Community",
+    desc: "The world's most engaging tech community, hackathons, and developer events, founded by Kunal Kushwaha, Sachin Sharma, and Aayush Sharma.",
+    url: "https://www.wemakedevs.org/?utm_source=luma",
+    linkText: "wemakedevs.org",
+  },
+  {
+    name: "Anakin",
+    role: "Co-Host & MCP Integration",
+    highlight: "Action & Doc Engine",
+    desc: "Autonomous workflow automation and web intelligence platform. Paired via Anakin MCP (https://mcp.anakin.io/mcp) with nocap's verification engine to verify external API specs and documentation claims live.",
+    url: "https://anakin.io",
+    linkText: "anakin.io · mcp.anakin.io",
+  },
 ];
 
 /*
@@ -424,18 +461,95 @@ export default async function Home() {
         </div>
       </section>
 
+      <hr className="rule2" />
+      <section id="no-9" className="scroll-mt-16 bg-wall">
+        <div className="mx-auto max-w-6xl px-5 py-20 sm:px-8">
+          <header className="relative mb-8">
+            <span data-numeral aria-hidden className="mb-1 block font-heading text-[64px] leading-none text-lamp/70 xl:absolute xl:right-full xl:top-0 xl:mb-0 xl:mr-6">9</span>
+            <div className="mb-2 flex flex-wrap items-center gap-3">
+              <span className="smallcaps border border-brass/50 bg-desk px-2.5 py-0.5 font-mono text-[11px] text-lamp">Speed of Thought 2026</span>
+              <span className="text-[14px] text-muted">Gurugram</span>
+            </div>
+            <h2 className="m-0 max-w-3xl text-[34px] leading-[1.15] text-cream">Sponsors &amp; Event Partners</h2>
+          </header>
+          <p className="mb-10 max-w-3xl text-[17px] text-muted">
+            nocap was conceived and engineered for the <a className="linklamp" href="https://luma.com/sot?tk=8BRaSB" target="_blank" rel="noopener noreferrer">Speed of Thought AI Hackathon</a> in Gurugram. Special thanks to the organizers and platform partners supporting the builder community.
+          </p>
+
+          <div className="grid grid-cols-1 gap-5 md:grid-cols-2 lg:grid-cols-3">
+            {SPONSORS.map((s) => (
+              <div key={s.name} className="flex flex-col justify-between border border-brass/40 bg-desk p-6 transition-colors hover:border-brass">
+                <div>
+                  <div className="mb-3 flex items-center justify-between gap-2">
+                    <span className="smallcaps border border-brass/30 bg-wall/80 px-2 py-0.5 font-mono text-[10px] text-lamp">{s.role}</span>
+                    <span className="font-mono text-[11px] text-muted">{s.highlight}</span>
+                  </div>
+                  <h3 className="m-0 font-heading text-[24px] text-cream">{s.name}</h3>
+                  <p className="mb-6 mt-2 text-[14px] leading-relaxed text-muted">{s.desc}</p>
+                </div>
+                <div className="border-t border-brass/30 pt-4">
+                  <a href={s.url} target="_blank" rel="noopener noreferrer" className="linklamp inline-flex items-center gap-1.5 font-mono text-[13px]">
+                    <span>{s.linkText}</span>
+                    <span aria-hidden="true">↗</span>
+                  </a>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <div className="mt-12 border border-brass bg-desk p-6 sm:p-8">
+            <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <span className="smallcaps border border-brass/50 bg-wall/90 px-2.5 py-0.5 font-mono text-[11px] text-lamp">Live Integration</span>
+                <h3 className="m-0 mt-2 font-heading text-[26px] text-cream">Anakin MCP + nocap: Action meets Verification</h3>
+              </div>
+              <span className="font-mono text-[13px] text-verified">✓ Endpoint: https://mcp.anakin.io/mcp</span>
+            </div>
+            <p className="mb-6 text-[15px] leading-relaxed text-muted">
+              Coding agents often claim compliance with external documentation (e.g. <em>&quot;migrated to Next.js 15 async cookies()&quot;</em> or <em>&quot;used Stripe v2024 idempotency headers&quot;</em>). While local tests may pass if mocked, nocap uses Anakin&apos;s remote web scraping and agentic search MCP server to cross-verify claims against live documentation.
+            </p>
+            <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+              <div className="border border-brass/40 bg-wall/60 p-4">
+                <span className="font-mono text-[12px] text-lamp">1. Action Engine · Anakin MCP</span>
+                <p className="mt-2 text-[14px] text-cream">Scrapes official API documentation, performs live agentic search across documentation portals, and maps live endpoints.</p>
+                <pre className="mt-3 overflow-x-auto border border-brass/30 bg-document p-3 font-mono text-[12px] text-ink">
+{`// .mcp.json (Cursor / Claude Code)
+"anakin": {
+  "url": "https://mcp.anakin.io/mcp",
+  "headers": {
+    "Authorization": "Bearer \${ANAKIN_API_KEY}"
+  }
+}`}
+                </pre>
+              </div>
+              <div className="border border-brass/40 bg-wall/60 p-4">
+                <span className="font-mono text-[12px] text-lamp">2. Verification Engine · nocap</span>
+                <p className="mt-2 text-[14px] text-cream">Exposes <code className="text-cream">verify_external_claim</code> to detect deprecated APIs, missing methods, and hallucinated external signatures before commit.</p>
+                <pre className="mt-3 overflow-x-auto border border-brass/30 bg-document p-3 font-mono text-[12px] text-ink">
+{`// Wire both engines into all agents:
+$ npx @shankywho/nocap init --all --anakin --write
+
+✓ Configures .mcp.json, .cursor, OpenCode, & AGENTS.md`}
+                </pre>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
       <footer className="border-t border-brass bg-desk">
         <div className="mx-auto flex max-w-6xl flex-wrap items-start justify-between gap-6 px-5 py-10 sm:px-8">
           <div className="space-y-2 text-cream">
             <Logo size={20} />
-            <p className="m-0 text-[15px] text-muted">Built for #OpenFire by @shankywho · MIT</p>
+            <p className="m-0 text-[15px] text-muted">Built for Speed of Thought 2026 by @shankywho · MIT</p>
             <p className="m-0 max-w-md text-[13px] leading-snug text-muted">Hero: After Thomas Eakins, The Chess Players (1876), The Metropolitan Museum of Art, public domain. Canvas extended for this page.</p>
           </div>
-          <nav className="flex gap-6 text-[16px]" aria-label="Footer">
+          <nav className="flex flex-wrap gap-6 text-[16px]" aria-label="Footer">
             <a className="linklamp" href={REPO}>GitHub</a>
             <a className="linklamp" href="https://www.npmjs.com/package/@shankywho/nocap">npm</a>
             <a className="linklamp" href="/docs">Docs</a>
             <a className="linklamp" href="/agents">Agents</a>
+            <a className="linklamp" href="https://luma.com/sot?tk=8BRaSB" target="_blank" rel="noopener noreferrer">Speed of Thought ↗</a>
           </nav>
         </div>
       </footer>

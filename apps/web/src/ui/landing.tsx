@@ -40,6 +40,7 @@ export function Nav({ heroHeight = 0.88 }: { heroHeight?: number }) {
           <a href="#no-1" className="hover:text-lamp">How it checks</a>
           <a href="#no-2" className="hover:text-lamp">Bitecheck</a>
           <a href="#no-3" className="hover:text-lamp">Repair loop</a>
+          <a href="#no-9" className="hover:text-lamp">Sponsors</a>
           <a href="/docs" className="hover:text-lamp">Docs</a>
         </div>
         <div className="flex items-center gap-5">
@@ -378,6 +379,7 @@ const AGENTS: Record<string, { cmd: string; note: string }> = {
   OpenCode: { cmd: "npx @shankywho/nocap init --all --write", note: "Adds an MCP entry to opencode.json." },
   "Gemini CLI": { cmd: "npx @shankywho/nocap init --all --write", note: "Adds an MCP entry to .gemini/settings.json. The AfterAgent hook can deny with NOCAP_BLOCK=1." },
   Alan: { cmd: "npx @shankywho/nocap init --all --write", note: "Add plugins/nocap to your workspace. The skill calls verify_claims before the agent says it is done." },
+  "Anakin MCP": { cmd: "npx @shankywho/nocap init --all --anakin --write", note: "Pairs Anakin's web scraper & agentic search MCP (https://mcp.anakin.io/mcp) with nocap's verification engine. Verifies external SDK & doc claims live." },
 };
 
 export function AgentTabs() {

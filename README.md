@@ -56,7 +56,8 @@ The model only splits the claims. Code decides every verdict. A quote guard drop
 - **Tamper flags.** Skipped, loosened or deleted tests, attached to the claim they undermine. Advisory, never a ✗ on their own.
 - **Repair loop and proof chains.** `nocap loop` sends contradicted claims back to the agent and re-checks. Anti-gaming rules mark a silently dropped claim (`dropped_silently`) or a deleted test (`repair_by_weakening`) as a failed chain.
 - **Multi-agent ledger.** Verdicts are recorded with the actor and the git blobs they held for, so the next agent sees what it can trust and what went stale.
-- **MCP server.** Seven tools over stdio (`verify_claims`, `get_repair`, `bitecheck`, `check_scope`, `ledger_facts`, `ledger_check`, `scorecard`).
+- **MCP server.** Eight tools over stdio (`verify_claims`, `get_repair`, `bitecheck`, `check_scope`, `ledger_facts`, `ledger_check`, `scorecard`, `verify_external_claim`).
+- **Anakin MCP pairing.** Live external doc and API verification via `https://mcp.anakin.io/mcp`. Cross-verifies agent claims about external SDK signatures, library methods, and documentation specs against live scraped web docs.
 - **Hooks** for Claude Code (Stop), Codex (notify) and Gemini CLI (AfterAgent).
 - **Alan plugin** in `plugins/nocap`, with a `nocap-verify` skill.
 - **Offline mode.** `--offline` skips the model and uses a deterministic extractor with the same verifiers.
@@ -105,7 +106,7 @@ The per-agent config formats are the best-known shapes and are unverified agains
 | `check` | Verify a summary against the repo in the current directory | `--summary`, `--base`, `--head`, `--no-exec`, `--offline`, `--allow-build`, `--json`, `--md`, `--strict`, `--repair`, `--since-last` |
 | `demo [scenario]` | Run a fixture scenario with live output | `--no-exec`, `--live` |
 | `loop` | Check, hand the repair packet to your agent, re-check | `--agent-cmd`, `--max`, `--summary-from` |
-| `init [agent]` | Wire nocap into your agents (dry run by default) | `--all`, `--write`, `--user` |
+| `init [agent]` | Wire nocap into your agents (dry run by default) | `--all`, `--write`, `--user`, `--anakin` |
 | `mcp` | Start the MCP stdio server | |
 | `hook <agent>` | Hook entrypoint for `claude`, `codex`, `gemini` | |
 | `bitecheck <tests...>` | Prove specific tests fail without the source change | `--base`, `--allow-build` |

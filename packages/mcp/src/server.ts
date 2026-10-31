@@ -92,6 +92,20 @@ export function createServer(env: Env = process.env): McpServer {
     (args) => tools.scorecard(args),
   );
 
+  server.registerTool(
+    "verify_external_claim",
+    {
+      description:
+        "Verify an agent's claim against external library documentation or API specifications using live web search and scraping via Anakin MCP (https://mcp.anakin.io/mcp). Detects deprecated APIs, missing methods, and hallucinated external signatures.",
+      inputSchema: {
+        claim: z.string().describe("The statement or API signature to verify against live external docs"),
+        doc_url: z.string().optional().describe("Optional documentation URL (e.g. https://nextjs.org/docs/...)"),
+        api_key: z.string().optional().describe("Optional Anakin API key (defaults to ANAKIN_API_KEY env var)"),
+      },
+    },
+    (args) => tools.verifyExternalClaim(args, env),
+  );
+
   return server;
 }
 

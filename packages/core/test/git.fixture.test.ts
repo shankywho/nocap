@@ -1,7 +1,7 @@
 import { stat } from "node:fs/promises";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { afterAll, describe, expect, it } from "vitest";
+import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { buildFixtures } from "../../../scripts/build-fixtures";
 import { readChangeSet } from "../src/git/diff";
 import { resolveRefs } from "../src/git/resolve";
@@ -13,6 +13,10 @@ const root = fileURLToPath(new URL("../../..", import.meta.url));
 describe("fixture repos", () => {
   const fs = new NodeFs();
   const clock = new FixedClock();
+
+  beforeAll(async () => {
+    await buildFixtures({ scenarios: ["untracked", "honest"], quiet: true });
+  });
 
   afterAll(async () => {
     await buildFixtures({ scenarios: ["untracked", "honest"], quiet: true });

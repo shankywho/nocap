@@ -2,6 +2,17 @@
 
 All notable changes to this project are documented here. The format follows Keep a Changelog and the project uses Semantic Versioning.
 
+## [0.1.3]
+
+### Fixed
+- **Bitecheck on clean repositories:** Running `nocap bitecheck <testFile>` when the test file has no uncommitted modifications in the active diff now outputs a clear explanation (`bitecheck is designed for newly modified test files in the active git diff. No uncommitted changes found for this test.`) and exits cleanly with code 0 instead of throwing runner errors or exiting with code 1.
+- **Standalone `repair` state memory:** `nocap check --repair` and `nocap repair` now automatically retrieve the latest failed receipt in `.nocap/receipts/` when invoked standalone without summary arguments or piped stdin, preventing blocked hanging reads.
+- **Parenthetical & dotfile claim extraction:**
+  - Dotfiles and config paths (`.gitignore`, `.mcp.json`, `.gemini/settings.json`, `.claude/settings.json`, `.env`) are correctly extracted as path tokens.
+  - Parenthetical file lists (e.g. `(AGENTS.md)`) and compound claims are parsed without truncating quotes or missing subsequent files.
+  - Numbers with commas (e.g. `1,000`) are no longer improperly split in clause extraction.
+- **Multi-file verification coverage:** In `verifyFileSet`, multi-file claims verify every matched file individually so that valid changes are not miscategorized as `UNDISCLOSED`.
+
 ## [0.1.2]
 
 ### Safety (incident)

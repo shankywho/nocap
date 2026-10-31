@@ -1,6 +1,14 @@
 {
   "name": "nocap-monorepo",
   "private": true,
+  "homepage": "https://nocap-a5tx.vercel.app/",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/shankywho/nocap.git"
+  },
+  "bugs": {
+    "url": "https://github.com/shankywho/nocap/issues"
+  },
   "type": "module",
   "packageManager": "pnpm@11.17.0",
   "engines": {

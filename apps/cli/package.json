@@ -3,6 +3,14 @@
   "version": "0.1.2",
   "description": "Your agent says it's done. nocap checks.",
   "license": "MIT",
+  "homepage": "https://nocap-a5tx.vercel.app/",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/shankywho/nocap.git"
+  },
+  "bugs": {
+    "url": "https://github.com/shankywho/nocap/issues"
+  },
   "type": "module",
   "bin": {
     "nocap": "./dist/index.js"

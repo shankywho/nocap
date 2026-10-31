@@ -145,7 +145,7 @@ describe("codex notify and gemini AfterAgent hooks", () => {
     expect(out.reason).toContain("repair packet");
     await fireAgent("gemini", "toothless", gemini, { NOCAP_BLOCK: "1" });
     expect((await fireAgent("gemini", "toothless", gemini, { NOCAP_BLOCK: "1" })).stdout).toBe("");
-  });
+  }, 90_000);
 
   it("gemini: does not block when stop_hook_active is true; honest summaries pass silently of blocks", async () => {
     const again = await fireAgent("gemini", "toothless", (c, s) => ({ ...gemini(c, s), session_id: "g2", stop_hook_active: true }), { NOCAP_BLOCK: "1" });

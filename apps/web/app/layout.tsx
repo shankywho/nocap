@@ -20,8 +20,8 @@ const mono = localFont({
   display: "swap",
 });
 
-// Absolute URLs for the social images: PUBLIC_BASE_URL, else the Vercel production domain, else localhost.
-const base = process.env.PUBLIC_BASE_URL ?? (process.env.VERCEL_PROJECT_PRODUCTION_URL ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}` : "http://localhost:3000");
+// Absolute URLs for the social images: PUBLIC_BASE_URL, else the Vercel production domain, else the production site.
+const base = process.env.PUBLIC_BASE_URL ?? (process.env.VERCEL_PROJECT_PRODUCTION_URL ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}` : "https://nocap-a5tx.vercel.app");
 
 export const metadata: Metadata = {
   metadataBase: new URL(base),

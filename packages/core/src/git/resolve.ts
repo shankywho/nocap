@@ -79,7 +79,12 @@ export async function createSnapshot(opts: {
     if (add.exitCode !== 0) throw new Error(`git add -A failed: ${add.stderr}`);
     const tree = await git(["write-tree"]);
     if (tree.exitCode !== 0) throw new Error(`git write-tree failed: ${tree.stderr}`);
+    // The snapshot is a throwaway object; it must not depend on the user having a git identity (CI runners often do not).
     const commit = await git([
+      "-c",
+      "user.name=nocap",
+      "-c",
+      "user.email=nocap@localhost",
       "commit-tree",
       tree.stdout.trim(),
       "-p",

@@ -28,4 +28,5 @@ jobs:
         env:
           MOCK_EXTERNALS: "true"
       - run: pnpm typecheck
+      - run: pnpm fixtures
       - run: pnpm test

@@ -6,6 +6,7 @@ import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import { buildFixtures } from "../../../scripts/build-fixtures";
 import { runCheck } from "../src/commands/check";
 import { runRepair } from "../src/commands/repair";
+import { runBitecheck } from "../src/commands/chain";
 import { preparePublishBody, publishReceipt } from "../src/io/publish";
 import { parseScopeFlags } from "@nocap/core/adapters";
 import { latestReceiptFile, loadReceipt } from "@nocap/core/adapters";
@@ -101,4 +102,35 @@ describe("nocap check exit codes", () => {
     expect(parseScopeFlags(["Auth=src/auth/**,lib/a/**"])).toEqual({ auth: ["src/auth/**", "lib/a/**"] });
     expect(() => parseScopeFlags(["bad"])).toThrow();
   });
+
+  it("check --repair without summary falls back to latest failed receipt", async () => {
+    await check("toothless");
+    const out = vi.spyOn(process.stdout, "write").mockImplementation(() => true);
+    const errw = vi.spyOn(process.stderr, "write").mockImplementation(() => true);
+    try {
+      const res = await runCheck({ cwd: join(cacheDir, "toothless"), repair: true });
+      expect(res.exitCode).toBe(0);
+      expect(res.repair).toBeDefined();
+      const text = out.mock.calls.map((c) => String(c[0])).join("");
+      expect(text).toContain("Retracted");
+    } finally {
+      out.mockRestore();
+      errw.mockRestore();
+    }
+  }, 60_000);
+
+  it("bitecheck on unchanged test files outputs friendly guidance and exits 0", async () => {
+    const out = vi.spyOn(process.stdout, "write").mockImplementation(() => true);
+    const errw = vi.spyOn(process.stderr, "write").mockImplementation(() => true);
+    try {
+      const code = await runBitecheck(["test/nonexistent.test.ts"], { cwd: join(cacheDir, "honest") });
+      expect(code).toBe(0);
+      const text = out.mock.calls.map((c) => String(c[0])).join("");
+      expect(text).toContain("outcome=no_matching_tests");
+      expect(text).toContain("bitecheck is designed for newly modified test files in the active git diff");
+    } finally {
+      out.mockRestore();
+      errw.mockRestore();
+    }
+  }, 60_000);
 });

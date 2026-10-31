@@ -1,4 +1,4 @@
-import type { Claim } from "../schema/claim.js";
+import type { Claim, ClaimType } from "../schema/claim.js";
 import type { Verdict } from "../schema/verdict.js";
 import type { ChangedFile } from "../git/types.js";
 import { contradicted, fileEvidence, unverifiable, verified, type VerifyContext } from "./helpers.js";
@@ -26,12 +26,7 @@ function findChange(ctx: VerifyContext, path: string): ChangedFile | undefined {
   return ctx.changeSet.files.find((f) => f.path === path || f.previousPath === path);
 }
 
-export function verifyFileSet(claim: Claim, ctx: VerifyContext): Verdict {
-  const raw = claim.paths[0];
-  if (!raw) return unverifiable("The claim names no file path, so it cannot be checked.");
-
-  if (claim.type === "file_renamed") return verifyRename(claim, ctx);
-
+function verifySingleFile(raw: string, type: ClaimType, ctx: VerifyContext): Verdict {
   const resolved = resolvePath(raw, ctx);
   if (resolved.kind === "ambiguous") {
     return unverifiable(`'${raw}' matches several files: ${resolved.candidates.slice(0, 4).join(", ")}.`);
@@ -39,8 +34,8 @@ export function verifyFileSet(claim: Claim, ctx: VerifyContext): Verdict {
   const head = new Set(ctx.filesAtHead);
 
   if (resolved.kind === "none") {
-    if (claim.type === "file_created") return contradicted(`'${raw}' is not in the change set or the head tree.`);
-    if (claim.type === "file_modified") return contradicted(`'${raw}' does not exist and was not changed.`);
+    if (type === "file_created") return contradicted(`'${raw}' is not in the change set or the head tree.`);
+    if (type === "file_modified") return contradicted(`'${raw}' does not exist and was not changed.`);
     return unverifiable(`'${raw}' is not in the change set or the head tree.`);
   }
 
@@ -48,7 +43,7 @@ export function verifyFileSet(claim: Claim, ctx: VerifyContext): Verdict {
   const change = findChange(ctx, path);
   const exists = head.has(path);
 
-  switch (claim.type) {
+  switch (type) {
     case "file_created":
       if (change?.status === "A") return verified(`${path} was added.`, [fileEvidence(change)]);
       if (change) return contradicted(`${path} already existed; its status is ${change.status}, not added.`, [fileEvidence(change)]);
@@ -70,6 +65,27 @@ export function verifyFileSet(claim: Claim, ctx: VerifyContext): Verdict {
     default:
       return unverifiable("Not a file-set claim.");
   }
+}
+
+export function verifyFileSet(claim: Claim, ctx: VerifyContext): Verdict {
+  if (claim.paths.length === 0) return unverifiable("The claim names no file path, so it cannot be checked.");
+
+  if (claim.type === "file_renamed") return verifyRename(claim, ctx);
+
+  if (claim.paths.length === 1) {
+    return verifySingleFile(claim.paths[0]!, claim.type, ctx);
+  }
+
+  const verdicts = claim.paths.map((p) => verifySingleFile(p, claim.type, ctx));
+  const contradictedVerdict = verdicts.find((v) => v.status === "contradicted");
+  if (contradictedVerdict) return contradictedVerdict;
+
+  const unverifiableVerdict = verdicts.find((v) => v.status === "unverifiable");
+  if (unverifiableVerdict) return unverifiableVerdict;
+
+  const allEvidence = verdicts.flatMap((v) => v.evidence);
+  const actionWord = claim.type === "file_created" ? "were added" : claim.type === "file_deleted" ? "were deleted" : "were modified";
+  return verified(`${claim.paths.length} files ${actionWord}.`, allEvidence);
 }
 
 function verifyRename(claim: Claim, ctx: VerifyContext): Verdict {

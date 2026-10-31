@@ -1,6 +1,6 @@
 import { writeFile } from "node:fs/promises";
-import { NocapEvents, renderJson, renderMarkdown, renderTerminal, repairMarkdown, type LlmPort, type Receipt, type RepairPacket } from "@nocap/core";
-import { llmStatus, verifyLocal } from "@nocap/core/adapters";
+import { buildRepairPacket, NocapEvents, renderJson, renderMarkdown, renderTerminal, repairMarkdown, type LlmPort, type Receipt, type RepairPacket } from "@nocap/core";
+import { latestRepairReceiptFile, llmStatus, loadReceipt, verifyLocal } from "@nocap/core/adapters";
 import { publishReceipt } from "../io/publish.js";
 import { createPrinter } from "../io/printer.js";
 import { readSummary, UsageError } from "../io/readSummary.js";
@@ -46,6 +46,21 @@ export async function runCheck(opts: CheckOptions, env: NodeJS.ProcessEnv = proc
   const err = (message: string) => process.stderr.write(`nocap: ${message}\n`);
   try {
     const repoPath = opts.cwd ?? process.cwd();
+    if (opts.repair && opts.summary === undefined && opts.summaryText === undefined) {
+      const receiptPath = await latestRepairReceiptFile(repoPath);
+      if (!receiptPath) {
+        err("no receipt found. Run `nocap check` with a summary first.");
+        return { exitCode: 2, receipt: null, repair: null };
+      }
+      const receipt = await loadReceipt(receiptPath);
+      const repair = buildRepairPacket(receipt.chain.chainId, receipt.chain.attempt, receipt.overall, receipt.claims, receipt.chain.items);
+      if (repair.items.length === 0) {
+        process.stdout.write("Nothing to repair: no open items in latest receipt.\n");
+        return { exitCode: 0, receipt, repair };
+      }
+      process.stdout.write(opts.json ? `${JSON.stringify(repair, null, 2)}\n` : `${repairMarkdown(repair)}\n`);
+      return { exitCode: 0, receipt, repair };
+    }
     const summary = opts.summaryText ?? (await readSummary(opts.summary));
     const events = new NocapEvents();
     const printer = createPrinter({ verbose: opts.verbose === true, quiet: opts.json === true && !opts.verbose });

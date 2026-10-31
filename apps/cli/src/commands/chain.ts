@@ -12,9 +12,12 @@ export async function runBitecheck(files: string[], opts: { base?: string; cwd?:
       no_matching_tests: "none of the tests you added or changed matched those files",
     };
     process.stdout.write(`outcome=${r.outcome}${r.mode === "stub" ? " (stub)" : ""}  ${note[r.outcome] ?? ""}\n`);
+    if (r.outcome === "no_matching_tests") {
+      process.stdout.write("  bitecheck is designed for newly modified test files in the active git diff. No uncommitted changes found for this test.\n");
+    }
     if (r.mode === "stub") process.stdout.write(`  stubbed to return undefined: ${r.stubbed.join(", ")}\n`);
     for (const t of r.selectedTests) process.stdout.write(`  ${t.file} › ${t.title}\n`);
-    return r.outcome === "bites" || r.outcome === "import_only" ? 0 : 1;
+    return r.outcome === "bites" || r.outcome === "import_only" || r.outcome === "no_matching_tests" ? 0 : 1;
   } catch (error) {
     process.stderr.write(`nocap: ${error instanceof Error ? error.message : String(error)}\n`);
     return 2;

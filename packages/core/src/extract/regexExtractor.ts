@@ -21,24 +21,29 @@ const BUILD_COMMANDS: Record<string, string> = {
   eslint: "npm run lint",
 };
 
-const PATH_TOKEN = /(?:^|[\s`"'(])([A-Za-z0-9_.-]+(?:\/[A-Za-z0-9_.-]+)*\.[A-Za-z0-9]+)/g;
+const PATH_TOKEN = /(?:^|[\s`"'(])([A-Za-z0-9_./-]*\.[A-Za-z0-9_.-]+|[A-Za-z0-9_.-]+(?:\/[A-Za-z0-9_.-]+)+|Makefile|Dockerfile|README|LICENSE)/gi;
 const BACKTICK_SYMBOL = /`([A-Za-z_$][\w$]*)(\(\))?`/g;
 const BARE_SYMBOL_AFTER_IN = /\bin\s+`?([A-Za-z_$][\w$]*)\b(?![/])/g;
+
+const KNOWN_EXT =
+  /\.(?:ts|tsx|js|jsx|mjs|cjs|py|go|rs|java|rb|json|yaml|yml|toml|md|txt|css|html|sh|bash|zsh)$/i;
+const KNOWN_NAMES =
+  /(?:^|\/)(?:\.(?:gitignore|npmignore|dockerignore|editorconfig|prettierrc.*|eslintrc.*|npmrc|nvmrc|env.*)|Makefile|Dockerfile|README|LICENSE)$/i;
 
 function unique(values: string[]): string[] {
   return [...new Set(values.filter((value) => value.length > 0))];
 }
 
-export function extractPaths(sentence: string): string[] {
+export function extractPaths(sentence: string, knownPaths: string[] = []): string[] {
   const paths: string[] = [];
+  const known = new Set(knownPaths.map((p) => normalisePath(p)));
   for (const match of sentence.matchAll(PATH_TOKEN)) {
-    const candidate = match[1];
+    let candidate = match[1];
     if (!candidate) continue;
-    if (
-      /\.(?:ts|tsx|js|jsx|mjs|cjs|py|go|rs|java|rb|json|yaml|yml|toml|md|txt|css|html)$/.test(
-        candidate,
-      )
-    ) {
+    candidate = candidate.replace(/[.,;:!?)]+$/, "");
+    if (!candidate) continue;
+    const norm = normalisePath(candidate);
+    if (known.has(norm) || KNOWN_EXT.test(candidate) || KNOWN_NAMES.test(candidate)) {
       paths.push(candidate);
     }
   }
@@ -112,6 +117,8 @@ interface RuleMatch {
   count?: number | null;
   command?: string | null;
   path?: string | null;
+  paths?: string[] | null;
+  quote?: string | null;
 }
 
 interface Rule {
@@ -204,24 +211,51 @@ const RULES: Rule[] = [
   {
     type: "file_created",
     pattern:
-      /\b(?:created|added)\s+(?:a\s+|the\s+)?(?:new\s+)?(?:file\s+)?`?([A-Za-z0-9_.-]+(?:\/[A-Za-z0-9_.-]+)*\.[A-Za-z0-9]+)`?/i,
-    build: (match) => ({ type: "file_created", path: match[1] ?? null, subject: match[1] ?? null }),
+      /\b(?:created|added)\s+(?:a\s+|the\s+)?(?:new\s+)?(?:file\s+)?`?([A-Za-z0-9_./-]*\.[A-Za-z0-9_.-]+|[A-Za-z0-9_.-]+(?:\/[A-Za-z0-9_.-]+)+|Makefile|Dockerfile|README|LICENSE)`?/i,
+    build: (match) => {
+      const p = match[1]?.replace(/[.,;:!?)]+$/, "") ?? null;
+      return { type: "file_created", path: p, subject: p };
+    },
+  },
+  {
+    type: "file_created",
+    pattern:
+      /\b(?:created|added)\s+(?:[A-Za-z0-9_ -]+\s+)?(?:files?|configs?|configuration|setup)\s*(?:\([^)]+\)|:\s*.+)/i,
+    build: (match) => {
+      const paths = extractPaths(match[0]);
+      return paths.length > 0 ? { type: "file_created", paths, subject: null, quote: match[0] } : null;
+    },
   },
   {
     type: "file_modified",
     pattern:
-      /\b(?:updated|modified|changed|edited|refactored)\s+(?:the\s+)?(?:file\s+)?`?([A-Za-z0-9_.-]+(?:\/[A-Za-z0-9_.-]+)*\.[A-Za-z0-9]+)`?/i,
-    build: (match) => ({
-      type: "file_modified",
-      path: match[1] ?? null,
-      subject: match[1] ?? null,
-    }),
+      /\b(?:updated|modified|changed|edited|refactored)\s+(?:the\s+)?(?:file\s+)?`?([A-Za-z0-9_./-]*\.[A-Za-z0-9_.-]+|[A-Za-z0-9_.-]+(?:\/[A-Za-z0-9_.-]+)+|Makefile|Dockerfile|README|LICENSE)`?/i,
+    build: (match) => {
+      const p = match[1]?.replace(/[.,;:!?)]+$/, "") ?? null;
+      return {
+        type: "file_modified",
+        path: p,
+        subject: p,
+      };
+    },
+  },
+  {
+    type: "file_modified",
+    pattern:
+      /\b(?:updated|modified|changed|edited|refactored)\s+(?:[A-Za-z0-9_ -]+\s+)?(?:files?|configs?|configuration|setup)\s*(?:\([^)]+\)|:\s*.+)/i,
+    build: (match) => {
+      const paths = extractPaths(match[0]);
+      return paths.length > 0 ? { type: "file_modified", paths, subject: null, quote: match[0] } : null;
+    },
   },
   {
     type: "file_deleted",
     pattern:
-      /\b(?:deleted|removed)\s+(?:the\s+)?(?:file\s+)?`?([A-Za-z0-9_.-]+(?:\/[A-Za-z0-9_.-]+)*\.[A-Za-z0-9]+)`?/i,
-    build: (match) => ({ type: "file_deleted", path: match[1] ?? null, subject: match[1] ?? null }),
+      /\b(?:deleted|removed)\s+(?:the\s+)?(?:file\s+)?`?([A-Za-z0-9_./-]*\.[A-Za-z0-9_.-]+|[A-Za-z0-9_.-]+(?:\/[A-Za-z0-9_.-]+)+|Makefile|Dockerfile|README|LICENSE)`?/i,
+    build: (match) => {
+      const p = match[1]?.replace(/[.,;:!?)]+$/, "") ?? null;
+      return { type: "file_deleted", path: p, subject: p };
+    },
   },
   {
     type: "symbol_added",
@@ -270,11 +304,58 @@ function splitSentences(summary: string): string[] {
   return sentences;
 }
 
+const CLAUSE_ACTION_START =
+  /^(?:updated|modified|changed|edited|refactored|created|added|deleted|removed|fixed|resolved|wrote|implemented|bumped|regenerated|didn'?t|did\s+not|never|no\s+|tests?\s+|all\s+|only\s+|tsc\b|lint\b|build\b)/i;
+
 function splitClauses(sentence: string): string[] {
-  return sentence
-    .split(/,\s*(?:and\s+|then\s+)?|\s+then\s+|;\s*/)
-    .map((clause) => clause.trim())
-    .filter((clause) => clause.length > 0);
+  const clauses: string[] = [];
+  let current = "";
+  let depth = 0;
+  let i = 0;
+  while (i < sentence.length) {
+    const ch = sentence[i];
+    if (ch === "(" || ch === "[" || ch === "{") {
+      depth++;
+      current += ch;
+      i++;
+    } else if (ch === ")" || ch === "]" || ch === "}") {
+      if (depth > 0) depth--;
+      current += ch;
+      i++;
+    } else if (depth === 0) {
+      const rest = sentence.slice(i);
+      const commaAnd = rest.match(/^(?:(?<!\d),(?!\d)\s*(?:and\s+|then\s+)?)/i);
+      const thenMatch = rest.match(/^\s+then\s+/i);
+      const semiMatch = rest.match(/^;\s*/i);
+      const andMatch = rest.match(/^\s+and\s+/i);
+
+      if (commaAnd) {
+        if (current.trim().length > 0) clauses.push(current.trim());
+        current = "";
+        i += commaAnd[0]!.length;
+      } else if (thenMatch) {
+        if (current.trim().length > 0) clauses.push(current.trim());
+        current = "";
+        i += thenMatch[0]!.length;
+      } else if (semiMatch) {
+        if (current.trim().length > 0) clauses.push(current.trim());
+        current = "";
+        i += semiMatch[0]!.length;
+      } else if (andMatch && CLAUSE_ACTION_START.test(rest.slice(andMatch[0]!.length))) {
+        if (current.trim().length > 0) clauses.push(current.trim());
+        current = "";
+        i += andMatch[0]!.length;
+      } else {
+        current += ch;
+        i++;
+      }
+    } else {
+      current += ch;
+      i++;
+    }
+  }
+  if (current.trim().length > 0) clauses.push(current.trim());
+  return clauses;
 }
 
 function matchRule(sentence: string): { match: RuleMatch; rule: Rule } | null {
@@ -289,11 +370,13 @@ function matchRule(sentence: string): { match: RuleMatch; rule: Rule } | null {
 }
 
 function toRawClaim(quote: string, match: RuleMatch, fallbackPaths: string[]): RawClaim | null {
-  const paths = fallbackPaths.map((path) => normalisePath(path));
-  const symbols = extractSymbols(quote);
+  const actualQuote = match.quote ?? quote;
+  const rawPaths = match.paths ?? (match.path ? [match.path, ...fallbackPaths] : fallbackPaths);
+  const paths = rawPaths.map((path) => normalisePath(path));
+  const symbols = extractSymbols(actualQuote);
   let subject = match.subject ?? null;
 
-  if (match.path) {
+  if (match.path && !match.paths) {
     paths.unshift(normalisePath(match.path));
   }
   if (match.type === "bug_fixed" || match.type === "symbol_added") {
@@ -323,7 +406,7 @@ function toRawClaim(quote: string, match: RuleMatch, fallbackPaths: string[]): R
   const symbolKeywords = symbols.flatMap((symbol) => keywordPartsForSymbol(symbol));
 
   return {
-    quote,
+    quote: actualQuote,
     type: match.type,
     subject,
     keywords: [...new Set([...keywordsForSubject(subject), ...symbolKeywords])].slice(0, 8),
@@ -350,7 +433,7 @@ export function extractClaims(summary: string, _changedPaths: string[] = []): Ra
 
   for (const sentence of splitSentences(summary)) {
     if (IGNORABLE.test(sentence.trim())) continue;
-    const sentencePaths = extractPaths(sentence);
+    const sentencePaths = extractPaths(sentence, _changedPaths);
 
     const primary = matchRule(sentence);
     if (primary) {
@@ -369,8 +452,8 @@ export function extractClaims(summary: string, _changedPaths: string[] = []): Ra
       if (clause === sentence) continue;
       const clauseMatch = matchRule(clause);
       if (!clauseMatch) continue;
-      if (primary && clauseMatch.match.type === primary.match.type) continue;
-      const claim = toRawClaim(clause, clauseMatch.match, extractPaths(clause));
+      if (primary && clauseMatch.match.type === primary.match.type && !clauseMatch.match.paths) continue;
+      const claim = toRawClaim(clause, clauseMatch.match, extractPaths(clause, _changedPaths));
       if (!claim) continue;
       const key = `${claim.type}:${claim.quote.toLowerCase()}`;
       if (seen.has(key)) continue;
@@ -380,8 +463,10 @@ export function extractClaims(summary: string, _changedPaths: string[] = []): Ra
 
     // "Added `x()` in/to src/x.ts" states a symbol and a file change: emit both.
     if (primary?.match.type === "symbol_added") {
-      const target = /\b(?:in|to)\s+`?([A-Za-z0-9_.-]+(?:\/[A-Za-z0-9_.-]+)*\.[A-Za-z0-9]+)`?/i.exec(sentence)?.[1];
-      if (target && extractPaths(sentence).includes(target)) {
+      const target = /\b(?:in|to)\s+`?([A-Za-z0-9_./-]*\.[A-Za-z0-9_.-]+|[A-Za-z0-9_.-]+(?:\/[A-Za-z0-9_.-]+)+|Makefile|Dockerfile|README|LICENSE)`?/i
+        .exec(sentence)?.[1]
+        ?.replace(/[.,;:!?)]+$/, "");
+      if (target && extractPaths(sentence, _changedPaths).includes(target)) {
         const key = `file_modified:${sentence.toLowerCase()}`;
         if (!seen.has(key)) {
           seen.add(key);

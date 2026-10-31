@@ -132,3 +132,23 @@ describe("symbol + file sentences", () => {
     expect(extractClaims("Added `computeDelay()`.").map((c) => c.type)).toEqual(["symbol_added"]);
   });
 });
+
+describe("parenthetical and compound file sentences", () => {
+  it("extracts parenthetical config files and trailing compound file update", () => {
+    const summary =
+      "Added nocap configuration files (.mcp.json, AGENTS.md, .gemini/settings.json, .claude/settings.json) and updated .gitignore.";
+    const claims = extractClaims(summary);
+    expect(claims.map((c) => c.type)).toEqual(["file_created", "file_modified"]);
+
+    const created = claims.find((c) => c.type === "file_created");
+    expect(created?.paths).toEqual([
+      ".mcp.json",
+      "AGENTS.md",
+      ".gemini/settings.json",
+      ".claude/settings.json",
+    ]);
+
+    const modified = claims.find((c) => c.type === "file_modified");
+    expect(modified?.paths).toEqual([".gitignore"]);
+  });
+});

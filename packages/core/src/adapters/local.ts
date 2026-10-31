@@ -138,6 +138,23 @@ export async function latestReceiptFile(repoRoot: string): Promise<string | null
   return files[files.length - 1] ?? null;
 }
 
+export async function latestRepairReceiptFile(repoRoot: string): Promise<string | null> {
+  const files = await listReceiptFiles(repoRoot);
+  if (files.length === 0) return null;
+  for (let i = files.length - 1; i >= 0; i--) {
+    const file = files[i]!;
+    try {
+      const receipt = await loadReceipt(file);
+      if (receipt.totals.contradicted > 0 || receipt.overall === "FAIL") {
+        return file;
+      }
+    } catch {
+      // ignore corrupt receipt file and continue
+    }
+  }
+  return files[files.length - 1] ?? null;
+}
+
 /* ─── wiring ──────────────────────────────────────────────────────────── */
 
 /** What extraction will use, so shells can say so instead of falling back silently. */

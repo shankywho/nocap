@@ -95,7 +95,7 @@ export function bitecheck(args: { repo_path: string; test_files: string[]; base?
       import_only: "WEAK: the tests fail only because the module no longer imports. Add behavioural assertions.",
       broken_on_head: "BROKEN: the selected tests fail on your current code.",
       environment: "COULD NOT RUN: the tests could not be executed here (or there is no source change to revert).",
-      no_matching_tests: "NO MATCHING TESTS: none of the tests you added or changed matched those files.",
+      no_matching_tests: "NO MATCHING TESTS: none of the tests you added or changed matched those files. bitecheck is designed for newly modified test files in the active git diff.",
     };
     const stub = r.mode === "stub" ? ` (stub: ${r.stubbed.join(", ")})` : "";
     return result(`${line[r.outcome] ?? r.outcome}${stub}\n\nSelected: ${r.selectedTests.map((t) => `${t.file} › ${t.title}`).join("; ") || "none"}`, r);

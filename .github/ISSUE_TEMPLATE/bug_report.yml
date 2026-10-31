@@ -1,0 +1,56 @@
+name: Bug report
+description: nocap gave a wrong verdict, crashed, or touched something it should not have
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        A wrong ✗ (false accusation) or anything that modifies your repo is the most serious kind of bug here. Please say so in the title.
+  - type: input
+    id: version
+    attributes:
+      label: nocap version
+      description: Output of `npx @shankywho/nocap --version`
+    validations:
+      required: true
+  - type: input
+    id: env
+    attributes:
+      label: Node version, OS and package manager
+      placeholder: Node 22.4, macOS 15, pnpm 10
+    validations:
+      required: true
+  - type: textarea
+    id: command
+    attributes:
+      label: Command you ran
+      render: bash
+    validations:
+      required: true
+  - type: textarea
+    id: summary
+    attributes:
+      label: The agent summary you checked
+      description: Paste it, or the sentence that was judged wrongly. Remove anything private.
+  - type: textarea
+    id: expected
+    attributes:
+      label: What you expected
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: What happened
+      description: Paste the receipt or error output. `--verbose` helps.
+      render: text
+    validations:
+      required: true
+  - type: dropdown
+    id: model
+    attributes:
+      label: Claim extraction
+      options:
+        - Live model (key configured)
+        - Offline (--offline or no key)
+        - Not sure

@@ -1,0 +1,26 @@
+name: Feature request
+description: Suggest a claim type, an agent integration, a runner, or a change in behaviour
+labels: [enhancement]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: The problem
+      description: What did an agent say or do that nocap could not check, or checked badly?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: What you would like nocap to do
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: How a verdict could be decided by code
+      description: nocap never lets a model set a verdict, and a ✗ needs hard evidence. What in the diff, the test output or the repo would prove or disprove it?
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives you considered
